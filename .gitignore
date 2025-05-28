@@ -1,0 +1,28 @@
+ /node_modules
+ /vendor
+ npm-debug.log
+ yarn-error.log
+
+ # Laravel-specific
+ /.env
+ /.env.backup
+ /.env.production
+ /public/hot
+ /public/storage
+ /storage/*.key
+ /bootstrap/cache/*
+ /storage/logs/*.log
+ /homestead.json
+ /homestead.yaml
+ /.vagrant
+
+ # Testing and caches
+ /.phpunit.result.cache
+ /coverage
+ /build
+
+ # IDE and editor files
+ /.idea
+ /.vscode
+ *.sublime-*
+ .DS_Store
