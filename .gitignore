@@ -25,4 +25,7 @@
  /.idea
  /.vscode
  *.sublime-*
- .DS_Store
+ 
+ vendor/
+ .env
+ vendor.tar.gz 
