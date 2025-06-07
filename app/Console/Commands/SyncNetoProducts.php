@@ -45,7 +45,7 @@ class SyncNetoProducts extends Command
         $startTime = now();
         $reducedLog = !$this->option('full-log');
 
-        $this->info("⏳ Started syncing at: " . $startTime->format('d-m-Y h:i A'));
+        $this->info("Started syncing at: " . $startTime->format('d-m-Y h:i A'));
         //\Log::channel('neto')->info("Started syncing at: " . $startTime->format('d-m-Y h:i A'));
 
         $client = new \GuzzleHttp\Client();
@@ -57,8 +57,8 @@ class SyncNetoProducts extends Command
         $totalPages = 0;
 
         do {
-            $this->info("📄 Browsing page: $page");
-            \Log::channel('neto')->info("📄 Browsing page: $page");
+            $this->info("Browsing page: $page");
+            \Log::channel('neto')->info("Browsing page: $page");
             $totalPages++;
 
             $response = $client->post(config('services.neto.url'), [
