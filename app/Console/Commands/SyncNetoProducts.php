@@ -198,8 +198,8 @@ class SyncNetoProducts extends Command
         $endTime = now();
 
         $summary = [
-            "🔁 Neto Product Sync Summary",
             "--------------------------------------",
+            "**Neto Product Sync Summary**",
             "-- Pages fetched: $totalPages",
             "-- Inserted: $totalInserted",
             "-- Updated: $totalUpdated",
