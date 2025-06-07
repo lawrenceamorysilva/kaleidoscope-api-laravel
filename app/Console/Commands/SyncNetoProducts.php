@@ -15,7 +15,7 @@ class SyncNetoProducts extends Command
      *
      * @var string
      */
-    protected $signature = 'sync:neto-products';
+    protected $signature = 'sync:neto-products {--full-log : Show full logging output (skips, unchanged, diffs)}';
 
 
     /**
@@ -43,17 +43,23 @@ class SyncNetoProducts extends Command
     public function handle()
     {
         $startTime = now();
-        $this->info("⏳ Started syncing at: {$startTime->toDateTimeString()}");
-        \Log::channel('neto')->info("⏳ Started syncing at: {$startTime->toDateTimeString()}");
+        $reducedLog = !$this->option('full-log');
+
+        $this->info("⏳ Started syncing at: " . $startTime->format('d-m-Y h:i A'));
+        \Log::channel('neto')->info("⏳ Started syncing at: " . $startTime->format('d-m-Y h:i A'));
 
         $client = new \GuzzleHttp\Client();
         $page = 1;
         $receivedSkus = [];
+        $totalInserted = 0;
+        $totalUpdated = 0;
+        $totalSkipped = 0;
+        $totalPages = 0;
 
         do {
-
             $this->info("📄 Browsing page: $page");
-            \Log::channel('neto')->info("📄 Browsing page: $page");    
+            \Log::channel('neto')->info("📄 Browsing page: $page");
+            $totalPages++;
 
             $response = $client->post(config('services.neto.url'), [
                 'headers' => [
@@ -86,12 +92,14 @@ class SyncNetoProducts extends Command
             foreach ($items as $item) {
                 $approved = filter_var($item['Approved'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 $isDropship = strtolower($item['Misc24'] ?? '') === 'yes';
-
                 $sku = $item['SKU'] ?? 'UNKNOWN SKU';
 
                 if (!($approved && $isDropship)) {
-                    $this->line("⏭️ Skipped (Not approved or not dropship): $sku");
-                    \Log::channel('neto')->info("⏭️ Skipped (Not approved or not dropship): $sku");
+                    $totalSkipped++;
+                    if (!$reducedLog) {
+                        $this->line("⏭️ Skipped (Not approved or not dropship): $sku");
+                        \Log::channel('neto')->info("⏭️ Skipped (Not approved or not dropship): $sku");
+                    }
                     continue;
                 }
 
@@ -119,55 +127,50 @@ class SyncNetoProducts extends Command
 
                 if (!$existing) {
                     \App\Models\NetoProduct::create(array_merge(['sku' => $sku], $data));
+                    $totalInserted++;
                     $this->info("✅ Inserted: $sku");
                     \Log::channel('neto')->info("✅ Inserted: $sku");
                 } else {
                     $currentData = $existing->only(array_keys($data));
-
-                    // Normalize values for numeric comparison to avoid false diffs like '68.00' vs '68'
                     $hasDiff = false;
                     $diffs = [];
 
                     foreach ($data as $key => $newValue) {
                         $oldValue = $currentData[$key] ?? null;
 
-                        // Check if both old and new values are numeric strings or numbers
                         if (is_numeric($oldValue) && is_numeric($newValue)) {
-                            // Compare as floats after casting
                             if (floatval($oldValue) !== floatval($newValue)) {
                                 $hasDiff = true;
-                                $diffs[$key] = [
-                                    'old' => $oldValue === null ? 'null' : $oldValue,
-                                    'new' => $newValue === null ? 'null' : $newValue,
-                                ];
+                                $diffs[$key] = ['old' => $oldValue, 'new' => $newValue];
                             }
                         } else {
-                            // Non-numeric, compare as strings
                             if ((string)$oldValue !== (string)$newValue) {
                                 $hasDiff = true;
-                                $diffs[$key] = [
-                                    'old' => $oldValue === null ? 'null' : $oldValue,
-                                    'new' => $newValue === null ? 'null' : $newValue,
-                                ];
+                                $diffs[$key] = ['old' => $oldValue, 'new' => $newValue];
                             }
                         }
                     }
 
                     if ($hasDiff) {
                         $existing->update($data);
+                        $totalUpdated++;
 
                         $this->warn("🟡 Updated: $sku");
                         \Log::channel('neto')->warning("🟡 Updated: $sku");
 
-                        foreach ($diffs as $field => $values) {
-                            $line = "    - $field: '{$values['old']}' => '{$values['new']}'";
-                            $this->line($line);
-                            \Log::channel('neto')->info($line);
+                        if (!$reducedLog) {
+                            foreach ($diffs as $field => $values) {
+                                $line = "    - $field: '{$values['old']}' => '{$values['new']}'";
+                                $this->line($line);
+                                \Log::channel('neto')->info($line);
+                            }
+                            $this->line('');
                         }
-                        $this->line(''); // blank line for console clarity
                     } else {
-                        $this->line("🟢 No changes (duplicate): $sku");
-                        \Log::channel('neto')->info("🟢 No changes (duplicate): $sku");
+                        if (!$reducedLog) {
+                            $this->line("🟢 No changes (duplicate): $sku");
+                            \Log::channel('neto')->info("🟢 No changes (duplicate): $sku");
+                        }
                     }
                 }
             }
@@ -175,28 +178,27 @@ class SyncNetoProducts extends Command
             $page++;
         } while (count($items) > 0);
 
-        // Inactivate missing products
-        $inactivated = \App\Models\NetoProduct::whereNotIn('sku', $receivedSkus)
-            ->where('status', 'active')
-            ->get();
-
-        foreach ($inactivated as $product) {
-            $product->update([
-                'status' => 'inactive',
-                'status_reason' => 'Inactivated ' . now()->format('Y-m-d h:i A') . ': SKU not in current Neto API response',
-            ]);
-            $this->error("🔴 Inactivated: {$product->sku}");
-            \Log::channel('neto')->error("🔴 Inactivated: {$product->sku}");
-        }
-
-        $this->info('🔁 Neto products synced successfully.');
-        \Log::channel('neto')->info('🔁 Neto products synced successfully.');
-
+        // End
         $endTime = now();
-        $this->info("✅ Finished syncing at: {$endTime->toDateTimeString()}");
-        \Log::channel('neto')->info("✅ Finished syncing at: {$endTime->toDateTimeString()}");
 
+        $summary = [
+            "🔁 Neto Product Sync Summary",
+            "--------------------------------------",
+            "🗂️  Pages fetched: $totalPages",
+            "🆕 Inserted: $totalInserted",
+            "♻️  Updated: $totalUpdated",
+            "⏭️ Skipped: $totalSkipped",
+            "🕒 Started: " . $startTime->format('d-m-Y h:i A'),
+            "🏁 Ended:   " . $endTime->format('d-m-Y h:i A'),
+            "--------------------------------------"
+        ];
+
+        foreach ($summary as $line) {
+            $this->line($line);
+            \Log::channel('neto')->info($line);
+        }
     }
+
 
 
 
