@@ -46,7 +46,7 @@ class SyncNetoProducts extends Command
         $reducedLog = !$this->option('full-log');
 
         $this->info("⏳ Started syncing at: " . $startTime->format('d-m-Y h:i A'));
-        \Log::channel('neto')->info("⏳ Started syncing at: " . $startTime->format('d-m-Y h:i A'));
+        //\Log::channel('neto')->info("Started syncing at: " . $startTime->format('d-m-Y h:i A'));
 
         $client = new \GuzzleHttp\Client();
         $page = 1;
@@ -128,8 +128,8 @@ class SyncNetoProducts extends Command
                 if (!$existing) {
                     \App\Models\NetoProduct::create(array_merge(['sku' => $sku], $data));
                     $totalInserted++;
-                    $this->info("✅ Inserted: $sku");
-                    \Log::channel('neto')->info("✅ Inserted: $sku");
+                    $this->info("Inserted: $sku");
+                    \Log::channel('neto')->info("Inserted: $sku");
                 } else {
                     $currentData = $existing->only(array_keys($data));
                     $hasDiff = false;
@@ -155,8 +155,8 @@ class SyncNetoProducts extends Command
                         $existing->update($data);
                         $totalUpdated++;
 
-                        $this->warn("🟡 Updated: $sku");
-                        \Log::channel('neto')->warning("🟡 Updated: $sku");
+                        $this->warn("Updated: $sku");
+                        \Log::channel('neto')->warning("Updated: $sku");
 
                         if (!$reducedLog) {
                             foreach ($diffs as $field => $values) {
@@ -168,8 +168,8 @@ class SyncNetoProducts extends Command
                         }
                     } else {
                         if (!$reducedLog) {
-                            $this->line("🟢 No changes (duplicate): $sku");
-                            \Log::channel('neto')->info("🟢 No changes (duplicate): $sku");
+                            $this->line("No changes (duplicate): $sku");
+                            \Log::channel('neto')->info("No changes (duplicate): $sku");
                         }
                     }
                 }
@@ -178,18 +178,34 @@ class SyncNetoProducts extends Command
             $page++;
         } while (count($items) > 0);
 
+
+        // Inactivate missing products (commented out at the moment: need to think if this is actually needed...)
+        /*$inactivated = \App\Models\NetoProduct::whereNotIn('sku', $receivedSkus)
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($inactivated as $product) {
+            $product->update([
+                'status' => 'inactive',
+                'status_reason' => 'Inactivated ' . now()->format('Y-m-d h:i A') . ': SKU not in current Neto API response',
+            ]);
+            $this->error("🔴 Inactivated: {$product->sku}");
+            \Log::channel('neto')->error("🔴 Inactivated: {$product->sku}");
+        }*/
+
+
         // End
         $endTime = now();
 
         $summary = [
             "🔁 Neto Product Sync Summary",
             "--------------------------------------",
-            "🗂️  Pages fetched: $totalPages",
-            "🆕 Inserted: $totalInserted",
-            "♻️  Updated: $totalUpdated",
-            "⏭️ Skipped: $totalSkipped",
-            "🕒 Started: " . $startTime->format('d-m-Y h:i A'),
-            "🏁 Ended:   " . $endTime->format('d-m-Y h:i A'),
+            "-- Pages fetched: $totalPages",
+            "-- Inserted: $totalInserted",
+            "-- Updated: $totalUpdated",
+            "-- Skipped: $totalSkipped",
+            "-- Started: " . $startTime->format('d-m-Y h:i A'),
+            "-- Ended:   " . $endTime->format('d-m-Y h:i A'),
             "--------------------------------------"
         ];
 
