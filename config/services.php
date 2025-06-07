@@ -30,4 +30,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'neto' => [
+        'url' => env('NETO_API_URL'),
+        'key' => env('NETO_API_KEY'),
+        'username' => env('NETO_API_USERNAME'),
+    ],
+
+
 ];

@@ -35,7 +35,7 @@ class ShippingController extends Controller
         $data = Cache::remember($cacheKey, now()->addMinutes(120), function () use ($postcode, $suburb, $weight) {
             $costs = DB::table('shipping_costs')
                 ->where('postcode', $postcode)
-                ->where('suburb', $suburb)
+                ->whereRaw('UPPER(suburb) = ?', [$suburb])
                 ->where('weight_kg', $weight)
                 ->select('courier', 'suburb', 'cost_aud as cost')
                 ->get()

@@ -35,6 +35,12 @@ return [
     */
 
     'channels' => [
+        'neto' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/neto-sync.log'),
+            'level' => 'debug',
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],
