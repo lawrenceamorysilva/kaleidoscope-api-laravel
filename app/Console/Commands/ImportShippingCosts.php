@@ -64,7 +64,8 @@
 
                  $this->info("Processing row {$rowCount}: Postcode {$row[0]}, Suburb {$row[1]}");
                  for ($i = 1; $i <= 100; $i++) {
-                     $cost = str_replace('$', '', $row[$i + 1]);
+                     $cost = str_replace(['$', ','], '', $row[$i + 1]);
+
                      if ($cost === '' || $cost === null) {
                          $this->warn("Skipping weight_kg {$i} for postcode {$row[0]}: empty cost");
                          continue;
