@@ -187,7 +187,7 @@ class SyncNetoProducts extends Command
         }
 
 
-        $this->fixMissingSurcharges();
+        //$this->fixMissingSurcharges();
 
         // End
         $endTime = now();
