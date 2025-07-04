@@ -40,8 +40,14 @@ class SSOLoginController extends Controller
         // Generate JWT (or session cookie), then redirect to Angular
         $token = $user->createToken('retailer')->plainTextToken;
 
-        //return redirect()->to("https://retailer.kaleidoscope.com.au/auth/callback?token={$token}");
-        return redirect()->to("http://retailer.localhost:4200/auth/callback?token={$token}");
+        // Determine base redirect URL based on app environment
+        $baseUrl = match (config('app.env')) {
+            'local' => 'http://retailer.localhost:4200',
+            'staging' => 'https://staging-retailer.kaleidoscope.com.au',
+            default => 'https://retailer.kaleidoscope.com.au',
+        };
+
+        return redirect()->to("{$baseUrl}/auth/callback?token={$token}");
 
     }
 
