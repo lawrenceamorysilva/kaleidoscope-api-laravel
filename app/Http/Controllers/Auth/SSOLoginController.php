@@ -41,11 +41,15 @@ class SSOLoginController extends Controller
         $token = $user->createToken('retailer')->plainTextToken;
 
         // Determine base redirect URL based on app environment
-        $baseUrl = match (config('app.env')) {
-            'local' => 'http://retailer.localhost:4200',
-            'staging' => 'https://staging-retailer.kaleidoscope.com.au',
-            default => 'https://retailer.kaleidoscope.com.au',
-        };
+        $env = config('app.env');
+
+        if ($env === 'local') {
+            $baseUrl = 'http://retailer.localhost:4200';
+        } elseif ($env === 'staging') {
+            $baseUrl = 'https://staging-retailer.kaleidoscope.com.au';
+        } else {
+            $baseUrl = 'https://retailer.kaleidoscope.com.au';
+        }
 
         return redirect()->to("{$baseUrl}/auth/callback?token={$token}");
 
