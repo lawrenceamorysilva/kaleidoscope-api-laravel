@@ -1,32 +1,22 @@
- /node_modules
- /vendor
- npm-debug.log
- yarn-error.log
+# Dependencies
+/node_modules/
+vendor/
 
- # Laravel-specific
- /.env
- /.env.backup
- /.env.production
- /public/hot
- /public/storage
- /storage/*.key
- /bootstrap/cache/*
- /storage/logs/*.log
- /homestead.json
- /homestead.yaml
- /.vagrant
+# Laravel-specific
+.env
+.env.*
+/public/hot
+/public/storage
+/storage/*.key
+/bootstrap/cache/*
+/storage/logs/*.log
 
- # Testing and caches
- /.phpunit.result.cache
- /coverage
- /build
+# Testing and caches
+/.phpunit.result.cache
+/coverage
+/build
 
- # IDE and editor files
- /.idea
- /.vscode
- *.sublime-*
- 
- vendor/
- .env
- vendor.tar.gz 
-/.env
+# IDE and editor files
+/.idea/
+/.vscode/
+*.sublime-*

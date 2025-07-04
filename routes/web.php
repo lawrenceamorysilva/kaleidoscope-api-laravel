@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\SSOLoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,3 +17,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/auth/sso_login', [SSOLoginController::class, 'handleSSO']);
+
+
+Route::post('/auth/fallback_login', [\App\Http\Controllers\Auth\FallbackLoginController::class, 'login']);
