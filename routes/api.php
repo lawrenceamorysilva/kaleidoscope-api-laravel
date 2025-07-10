@@ -29,5 +29,9 @@ Route::post('/login', function (Request $request) {
     return response()->json(['token' => $token]);
 });
 
+Route::middleware('auth:sanctum')->get('/auth/me', function (Request $request) {
+    return response()->json($request->user());
+});
+
 
 Route::post('/fallback_login', [FallbackLoginController::class, 'login']);

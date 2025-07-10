@@ -74,7 +74,7 @@ class SyncNetoProducts extends Command
                     'IsActive' => true,
                     'Visible' => true,
                     'OutputSelector' => [
-                        "ID", "Misc15", "Misc24", "Misc25", "Misc11","Misc41",
+                        "ID", "Misc15", "Misc24", "Misc25", "Misc11","Misc41","Misc31",
                         "SKU", "Brand", "Name", "Approved",
                         "AvailableSellQuantity", "ShippingWeight",
                         "ShippingLength", "ShippingWidth", "ShippingHeight",
@@ -125,6 +125,7 @@ class SyncNetoProducts extends Command
                 'dropship_price' => $dropshipPrice,
                 'surcharge' => $surcharge,
                 'qty' => $item['AvailableSellQuantity'] ?? null,
+                'qty_buffer' => (int)($item['Misc31'] ?? 0),
                 'shipping_weight' => $item['ShippingWeight'] ?? null,
                 'shipping_length' => $item['ShippingLength'] ?? null,
                 'shipping_width' => $item['ShippingWidth'] ?? null,

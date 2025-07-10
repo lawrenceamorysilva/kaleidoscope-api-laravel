@@ -10,7 +10,7 @@ class NetoProduct extends Model
 {
     protected $fillable = [
         'sku', 'neto_id', 'name', 'brand', 'approved', 'stock_status', 'dropship', 'dropship_price', 'surcharge',
-        'qty', 'shipping_weight', 'shipping_length', 'shipping_width', 'shipping_height',
+        'qty','qty_buffer', 'shipping_weight', 'shipping_length', 'shipping_width', 'shipping_height',
         'images', 'status', 'status_reason',
     ];
 
