@@ -23,15 +23,42 @@ class ShippingController extends Controller
             'weight' => 'required|numeric|min:0',
         ]);
 
-        // Retrieve inputs with trimming and formatting
-        $postcode = $request->input('postcode');
+        // Retrieve and sanitize inputs
+        $postcode = trim($request->input('postcode'));
         $suburb = strtoupper(trim($request->input('suburb')));
         $weight = ceil((float) $request->input('weight'));
 
-        // Cache key to store/retrieve cached results for 120 minutes
+        // Validation: Check suburb exists
+        $suburbExists = DB::table('shipping_costs')
+            ->whereRaw('UPPER(suburb) = ?', [$suburb])
+            ->exists();
+
+        if (!$suburbExists) {
+            return response()->json(['error' => 'Suburb does not exist.'], 422);
+        }
+
+        // Validation: Check postcode exists
+        $postcodeExists = DB::table('shipping_costs')
+            ->where('postcode', $postcode)
+            ->exists();
+
+        if (!$postcodeExists) {
+            return response()->json(['error' => 'Postcode does not exist.'], 422);
+        }
+
+        // Validation: Check suburb belongs to postcode
+        $validPair = DB::table('shipping_costs')
+            ->where('postcode', $postcode)
+            ->whereRaw('UPPER(suburb) = ?', [$suburb])
+            ->exists();
+
+        if (!$validPair) {
+            return response()->json(['error' => 'Suburb does not belong to the specified postcode.'], 422);
+        }
+
+        // Proceed to cost calculation (cached)
         $cacheKey = "shipping_costs:$postcode:$suburb:$weight";
 
-        // Use cache remember to either fetch cached or execute the DB query
         $data = Cache::remember($cacheKey, now()->addMinutes(120), function () use ($postcode, $suburb, $weight) {
             $costs = DB::table('shipping_costs')
                 ->where('postcode', $postcode)
@@ -65,7 +92,7 @@ class ShippingController extends Controller
             ];
         });
 
-        // Return JSON response
         return response()->json($data);
     }
+
 }
