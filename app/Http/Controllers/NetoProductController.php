@@ -41,5 +41,77 @@ class NetoProductController extends Controller
     {
         return NetoProduct::all(); // basic test response
     }
-    
+
+    //used by admin portal
+    public function getBySku($sku)
+    {
+        $product = NetoProduct::where('sku', $sku)
+            ->where('dropship', 'Yes')
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$product) {
+            return response()->json(['error' => 'SKU not found or not available for dropshipping'], 404);
+        }
+
+        $availableQty = max(0, ($product->qty ?? 0) - ($product->qty_buffer ?? 0));
+
+        return response()->json([
+            'sku' => $product->sku,
+            'name' => $product->name,
+            'brand' => $product->brand,
+            'price' => number_format($product->dropship_price ?? 0, 2, '.', ''),
+            'surcharge' => number_format($product->surcharge ?? 0, 2, '.', ''),
+            'qty' => $availableQty,
+            'netoId' => $product->neto_id,
+            'stockStatus' => $product->stock_status,
+            'shippingWeight' => $product->shipping_weight,
+        ]);
+    }
+
+
+    //used by retailer portal
+    public function lookupSkus(Request $request)
+    {
+        $validated = $request->validate([
+            'items' => 'required|array|max:20',
+            'items.*.sku' => 'required|string',
+            'items.*.qty' => 'nullable|integer|min:1'
+        ]);
+
+        $results = [];
+
+        foreach ($validated['items'] as $item) {
+            $sku = trim($item['sku']);
+            $qty = $item['qty'] ?? 1;
+
+            $product = NetoProduct::where('sku', $sku)->first();
+
+            if (!$product) {
+                $results[] = [
+                    'sku' => $sku,
+                    'error' => 'Cannot find SKU, please check and try again'
+                ];
+                continue;
+            }
+
+            $availableQty = ($product->qty ?? 0) - ($product->qty_buffer ?? 0);
+            $inStock = $availableQty >= $qty;
+
+            $results[] = [
+                'sku' => $sku,
+                'name' => $product->name,
+                'dropship_price' => number_format($product->dropship_price ?? 0, 2, '.', ''),
+                'shipping_weight' => $product->shipping_weight, // ✅ add this
+                'qty_available' => $availableQty,
+                'in_stock' => $inStock,
+                'error' => $inStock ? null : 'Product is not in stock'
+            ];
+        }
+
+        return response()->json($results);
+    }
+
+
+
 }

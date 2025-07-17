@@ -34,4 +34,10 @@ Route::middleware('auth:sanctum')->get('/auth/me', function (Request $request) {
 });
 
 
+Route::get('/products/sku/{sku}', [\App\Http\Controllers\NetoProductController::class, 'getBySku']);
+
+
+Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
+
+
 Route::post('/fallback_login', [FallbackLoginController::class, 'login']);
