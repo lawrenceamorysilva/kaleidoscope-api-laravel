@@ -12,7 +12,21 @@ class NetoProductController extends Controller
     public function index(Request $request)
     {
         return Cache::remember('neto_products_all', now()->addMinutes(10), function () {
-            return NetoProduct::all();
+            return NetoProduct::select([
+                'sku',
+                'name',
+                'brand',
+                'stock_status',
+                'dropship_price',
+                'surcharge',
+                'qty',
+                'qty_buffer',
+                'shipping_weight',
+                'shipping_length',
+                'shipping_width',
+                'shipping_height',
+                'updated_at',
+            ])->get();
         });
     }
 
