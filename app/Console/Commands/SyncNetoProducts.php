@@ -1,10 +1,9 @@
 <?php
 
 namespace App\Console\Commands;
-
 use Illuminate\Console\Command;
-
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 
 
@@ -211,6 +210,32 @@ class SyncNetoProducts extends Command
             $this->line($line);
             \Log::channel('neto')->info($line);
         }
+
+        // After syncing finishes
+        \Log::channel('neto')->info("Rebuilding neto_products_cache...");
+
+        $allProducts = \App\Models\NetoProduct::all()->mapWithKeys(function ($product) {
+            $sku = strtoupper($product->sku); // 🔥 Normalize SKU to uppercase
+            return [
+                $sku => [
+                    'sku' => $sku,
+                    'name' => $product->name,
+                    'dropship_price' => number_format($product->dropship_price ?? 0, 2, '.', ''),
+                    'shipping_weight' => $product->shipping_weight,
+                    'qty_available' => ($product->qty ?? 0) - ($product->qty_buffer ?? 0),
+                    'qty_buffer' => $product->qty_buffer,
+                ],
+            ];
+        })->toArray();
+
+        Cache::put('neto_products_cache', $allProducts, now()->addHours(6));
+
+        \Log::channel('neto')->info("✅ neto_products_cache refreshed. Total SKUs: " . count($allProducts));
+
+// Optional: Log a sample of 3 SKUs for debug purposes
+        \Log::channel('neto')->info('Sample SKUs in cache: ' . implode(', ', array_slice(array_keys($allProducts), 0, 3)));
+
+
     }
 
 

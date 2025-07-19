@@ -130,6 +130,17 @@
 
              $this->info("Imported {$courier} shipping costs from {$file}: {$rowCount} rows processed, {$inserted} inserted, {$updated} updated, {$skipped} skipped");
              Log::info("Imported {$courier} shipping costs: {$rowCount} rows processed, {$inserted} inserted, {$updated} updated, {$skipped} skipped");
+
+             // 🔥 Clear cached shipping cost entries
+             Cache::flush();
+
+             $this->info("✅ Shipping cost cache cleared after import.");
+             Log::info("✅ Shipping cost cache cleared after importing {$courier} data.");
+
+             return 0;
+
+
+
              return 0;
          }
 

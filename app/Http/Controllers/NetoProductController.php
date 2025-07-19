@@ -79,13 +79,18 @@ class NetoProductController extends Controller
             'items.*.qty' => 'nullable|integer|min:1'
         ]);
 
+        $skus = collect($validated['items'])->pluck('sku')->map(fn($s) => trim($s))->unique()->all();
+
+        // ✅ Load flat array from cache (not a Collection)
+        $allProducts = cache('neto_products_cache', []);
+
         $results = [];
 
         foreach ($validated['items'] as $item) {
             $sku = trim($item['sku']);
             $qty = $item['qty'] ?? 1;
 
-            $product = NetoProduct::where('sku', $sku)->first();
+            $product = $allProducts[$sku] ?? null;
 
             if (!$product) {
                 $results[] = [
@@ -95,14 +100,15 @@ class NetoProductController extends Controller
                 continue;
             }
 
-            $availableQty = ($product->qty ?? 0) - ($product->qty_buffer ?? 0);
+            // ✅ Use qty_available directly from cache
+            $availableQty = $product['qty_available'];
             $inStock = $availableQty >= $qty;
 
             $results[] = [
                 'sku' => $sku,
-                'name' => $product->name,
-                'dropship_price' => number_format($product->dropship_price ?? 0, 2, '.', ''),
-                'shipping_weight' => $product->shipping_weight, // ✅ add this
+                'name' => $product['name'],
+                'dropship_price' => $product['dropship_price'],
+                'shipping_weight' => $product['shipping_weight'],
                 'qty_available' => $availableQty,
                 'in_stock' => $inStock,
                 'error' => $inStock ? null : 'Product is not in stock'
@@ -111,6 +117,11 @@ class NetoProductController extends Controller
 
         return response()->json($results);
     }
+
+
+
+
+
 
 
 
