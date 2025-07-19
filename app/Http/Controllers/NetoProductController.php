@@ -9,6 +9,7 @@ use App\Models\NetoProduct;
 
 class NetoProductController extends Controller
 {
+    //used by admin portal
     public function index(Request $request)
     {
         return Cache::remember('neto_products_all', now()->addMinutes(10), function () {
