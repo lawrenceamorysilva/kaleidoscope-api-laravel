@@ -26,8 +26,11 @@ class NetoProductController extends Controller
                 'shipping_width',
                 'shipping_height',
                 'updated_at',
-            ])->get();
+            ])
+                ->where('dropship', 'Yes')
+                ->get();
         });
+
     }
 
     //used by admin portal
