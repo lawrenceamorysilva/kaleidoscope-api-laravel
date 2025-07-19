@@ -46,8 +46,8 @@ class SyncNetoProducts extends Command
         $threshold = config('shipping.surcharge_threshold');
         $percentage = config('shipping.surcharge_percentage');
 
-        $this->info("Started syncing at: " . $startTime->format('d-m-Y h:i A'));
-        //\Log::channel('neto')->info("Started syncing at: " . $startTime->format('d-m-Y h:i A'));
+        $this->info("Started syncing at: " . $startTime->format('Y-m-d H:i:s'));
+        \Log::channel('neto')->info("Started syncing at: " . $startTime->format('Y-m-d H:i:s'));
 
         $client = new \GuzzleHttp\Client();
 
@@ -59,32 +59,39 @@ class SyncNetoProducts extends Command
         $totalUpdated = 0;
         $totalSkipped = 0;
 
-        $response = $client->post(config('services.neto.url'), [
-            'headers' => [
-                'NETOAPI_ACTION' => 'GetItem',
-                'NETOAPI_KEY' => config('services.neto.key'),
-                'NETOAPI_USERNAME' => config('services.neto.username'),
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-            ],
-            'json' => [
-                'Filter' => [
-                    'Approved' => true,
-                    'IsActive' => true,
-                    'Visible' => true,
-                    'OutputSelector' => [
-                        "ID", "Misc15", "Misc24", "Misc25", "Misc11","Misc41","Misc31",
-                        "SKU", "Brand", "Name", "Approved",
-                        "AvailableSellQuantity", "ShippingWeight",
-                        "ShippingLength", "ShippingWidth", "ShippingHeight",
-                        "Images", "ImagesURL"
-                    ],
-                    'Limit' => 3000,
+        try {
+            $response = $client->post(config('services.neto.url'), [
+                'headers' => [
+                    'NETOAPI_ACTION' => 'GetItem',
+                    'NETOAPI_KEY' => config('services.neto.key'),
+                    'NETOAPI_USERNAME' => config('services.neto.username'),
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'Filter' => [
+                        'Approved' => true,
+                        'IsActive' => true,
+                        'Visible' => true,
+                        'OutputSelector' => [
+                            "ID", "Misc15", "Misc24", "Misc25", "Misc11", "Misc41", "Misc31",
+                            "SKU", "Brand", "Name", "Approved",
+                            "AvailableSellQuantity", "ShippingWeight",
+                            "ShippingLength", "ShippingWidth", "ShippingHeight",
+                            "Images", "ImagesURL"
+                        ],
+                        'Limit' => 3000,
+                    ]
                 ]
-            ]
-        ]);
+            ]);
 
-        $items = json_decode($response->getBody()->getContents(), true)['Item'] ?? [];
+            $items = json_decode($response->getBody()->getContents(), true)['Item'] ?? [];
+
+        } catch (\Throwable $e) {
+            \Log::channel('neto')->error('❌ Neto sync failed: ' . $e->getMessage());
+            $this->error('❌ Failed to fetch data from Neto.');
+            return Command::FAILURE;
+        }
 
         foreach ($items as $item) {
             $approved = filter_var($item['Approved'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -107,12 +114,10 @@ class SyncNetoProducts extends Command
             $cleanedPrice = floatval(str_replace([',', '$'], '', $rawPrice));
             $dropshipPrice = $cleanedPrice;
 
-
             $surcharge = 0;
             if ($dropshipPrice > $threshold) {
                 $surcharge = round($dropshipPrice * ($percentage / 100), 2);
             }
-
 
             $data = [
                 'neto_id' => $item['ID'],
@@ -137,7 +142,6 @@ class SyncNetoProducts extends Command
             $existing = \App\Models\NetoProduct::where('sku', $sku)->first();
 
             if (!$existing) {
-                //used Models/NetoProduct to determine which fields are fillable...
                 \App\Models\NetoProduct::create(array_merge(['sku' => $sku], $data));
                 $totalInserted++;
                 $this->info("Inserted: $sku");
@@ -186,23 +190,16 @@ class SyncNetoProducts extends Command
             }
         }
 
-
-        //$this->fixMissingSurcharges();
-
-        // End
         $endTime = now();
 
         $summary = [
             "--------------------------------------",
             "**Neto Product Sync Summary**",
-//            "-- Pages fetched: $totalPages",
             "-- Inserted: $totalInserted",
             "-- Updated: $totalUpdated",
             "-- Skipped: $totalSkipped",
-            "-- Started: " . $startTime->format('d-m-Y h:i A'),
-            "-- Ended:   " . $endTime->format('d-m-Y h:i A'),
-//            "-- Threshold:  . var_export($threshold, true)",
-//            "-- Percentage:  . var_export($percentage, true)",
+            "-- Started: " . $startTime->format('Y-m-d H:i:s'),
+            "-- Ended:   " . $endTime->format('Y-m-d H:i:s'),
             "--------------------------------------"
         ];
 
@@ -211,11 +208,13 @@ class SyncNetoProducts extends Command
             \Log::channel('neto')->info($line);
         }
 
-        // After syncing finishes
+        // Refresh cache
         \Log::channel('neto')->info("Rebuilding neto_products_cache...");
 
+        Cache::forget('neto_products_cache'); // 🧹 Clean up old cache first
+
         $allProducts = \App\Models\NetoProduct::all()->mapWithKeys(function ($product) {
-            $sku = strtoupper($product->sku); // 🔥 Normalize SKU to uppercase
+            $sku = strtoupper($product->sku);
             return [
                 $sku => [
                     'sku' => $sku,
@@ -231,12 +230,13 @@ class SyncNetoProducts extends Command
         Cache::put('neto_products_cache', $allProducts, now()->addHours(6));
 
         \Log::channel('neto')->info("✅ neto_products_cache refreshed. Total SKUs: " . count($allProducts));
-
-// Optional: Log a sample of 3 SKUs for debug purposes
         \Log::channel('neto')->info('Sample SKUs in cache: ' . implode(', ', array_slice(array_keys($allProducts), 0, 3)));
 
+        Cache::forget('neto_products_all');
 
+        return Command::SUCCESS;
     }
+
 
 
     /**
