@@ -64,9 +64,10 @@ class ShippingController extends Controller
 
             if (empty($costs)) {
                 abort(response()->json([
-                    'error' => "No shipping cost found for postcode $postcode, suburb $suburb, weight $weight kg.",
+                    'error' => "We couldn’t find a shipping option for $suburb $postcode with total weight of $weight kg. Please adjust the order or contact support.",
                 ], 404));
             }
+
 
             return [
                 'postcode' => $postcode,
