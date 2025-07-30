@@ -12,8 +12,13 @@ class NetoProductController extends Controller
     //used by admin portal
     public function index(Request $request)
     {
-        return Cache::remember('neto_products_all', now()->addMinutes(10), function () {
-            return NetoProduct::select([
+        $dropship = $request->query('dropship'); // 'Yes', 'No', or null
+
+        // Cache key should vary depending on dropship filter
+        $cacheKey = 'neto_products_all_' . ($dropship ?? 'all');
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship) {
+            $query = NetoProduct::select([
                 'sku',
                 'name',
                 'brand',
@@ -27,9 +32,13 @@ class NetoProductController extends Controller
                 'shipping_width',
                 'shipping_height',
                 'updated_at',
-            ])
-                ->where('dropship', 'Yes')
-                ->get();
+            ]);
+
+            if ($dropship === 'Yes' || $dropship === 'No') {
+                $query->where('dropship', $dropship);
+            }
+
+            return $query->get();
         });
 
     }

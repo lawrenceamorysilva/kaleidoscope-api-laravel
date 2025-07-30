@@ -98,7 +98,7 @@ class SyncNetoProducts extends Command
             $isDropship = strtolower($item['Misc24'] ?? '') === 'yes';
             $sku = $item['SKU'] ?? 'UNKNOWN SKU';
 
-            if (!($approved && $isDropship)) {
+            if (!$approved) { //allow dropship = No
                 $totalSkipped++;
                 if (!$reducedLog) {
                     $this->line("⏭️ Skipped (Not approved or not dropship): $sku");
