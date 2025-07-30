@@ -23,6 +23,7 @@ class NetoProductController extends Controller
                 'name',
                 'brand',
                 'stock_status',
+                'dropship',
                 'dropship_price',
                 'surcharge',
                 'qty',
@@ -90,16 +91,18 @@ class NetoProductController extends Controller
 
             $allProducts = NetoProduct::query()
                 ->where('is_active', true)
-                ->get(['sku', 'name', 'dropship_price', 'shipping_weight', 'qty', 'qty_buffer'])
+                ->get(['sku', 'name', 'dropship_price', 'shipping_weight', 'qty', 'qty_buffer', 'dropship']) // 👈 include dropship
                 ->mapWithKeys(function ($p) {
                     return [$p->sku => [
                         'name' => $p->name,
                         'dropship_price' => $p->dropship_price,
                         'shipping_weight' => $p->shipping_weight,
                         'qty_available' => $p->qty - $p->qty_buffer,
+                        'dropship' => $p->dropship, // 👈 new field
                     ]];
                 })
                 ->toArray();
+
 
             Cache::put('neto_products_cache', $allProducts, now()->addHours(6));
         }
@@ -136,6 +139,7 @@ class NetoProductController extends Controller
                 'shipping_weight' => $product['shipping_weight'],
                 'qty_available' => $availableQty,
                 'in_stock' => $inStock,
+                'dropship' => $product['dropship'], // ✅ added
                 'error' => $inStock ? null : 'Product is not in stock'
             ];
         }
