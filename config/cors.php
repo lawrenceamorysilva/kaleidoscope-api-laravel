@@ -8,8 +8,9 @@ return [
 
     'allowed_origins' => [
         'http://admin.localhost:4201',                         // ✅ Local dev
-        'http://retailer.localhost:4200',                         // ✅ Local dev
-        'https://staging-admin.kaleidoscope.com.au',           // ✅ Staging frontend
+        'http://retailer.localhost:4200',                      // ✅ Local dev
+        'https://staging-admin.kaleidoscope.com.au',           // ✅ Staging admin portal
+        'https://staging-retailer.kaleidoscope.com.au'         //✅ Staging retailer portal
     ],
 
     'allowed_origins_patterns' => [], // ✅ Leave empty to prioritize allowed_origins
