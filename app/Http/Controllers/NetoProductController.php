@@ -83,35 +83,41 @@ class NetoProductController extends Controller
 
         $skus = collect($validated['items'])->pluck('sku')->map(fn($s) => trim($s))->unique()->all();
 
-        // ✅ Load flat array from cache (not a Collection)
+        // ✅ Load cache (flat array, not a Collection)
         $allProducts = cache('neto_products_cache', []);
 
-        if (empty($allProducts)) {
-            \Log::warning('⚠️ neto_products_cache was empty. Rebuilding from DB...');
+        // ✅ Detect stale cache based on missing fields
+        $needsRefresh = empty($allProducts) || collect($allProducts)->contains(function ($p) {
+                return !isset($p['dropship']);
+            });
+
+        if ($needsRefresh) {
+            \Log::warning('♻️ neto_products_cache is missing or stale. Rebuilding from DB...');
 
             $allProducts = NetoProduct::query()
                 ->where('is_active', true)
-                ->get(['sku', 'name', 'dropship_price', 'shipping_weight', 'qty', 'qty_buffer', 'dropship']) // 👈 include dropship
+                ->get([
+                    'sku', 'name', 'dropship_price', 'shipping_weight',
+                    'qty', 'qty_buffer', 'dropship'
+                ])
                 ->mapWithKeys(function ($p) {
                     return [$p->sku => [
                         'name' => $p->name,
                         'dropship_price' => $p->dropship_price,
                         'shipping_weight' => $p->shipping_weight,
                         'qty_available' => $p->qty - $p->qty_buffer,
-                        'dropship' => $p->dropship, // 👈 new field
+                        'dropship' => $p->dropship,
                     ]];
                 })
                 ->toArray();
 
-
             Cache::put('neto_products_cache', $allProducts, now()->addHours(6));
-        }
 
-        if (!empty($allProducts)) {
-            \Log::info('🔍 neto_products_cache rebuilt. Count: ' . count($allProducts));
+            \Log::info('✅ neto_products_cache rebuilt. Count: ' . count($allProducts));
             \Log::info('🧪 Sample SKUs: ' . implode(', ', array_slice(array_keys($allProducts), 0, 5)));
         }
 
+        // ✅ Continue SKU lookup using cache
         $results = [];
 
         foreach ($validated['items'] as $item) {
@@ -128,7 +134,6 @@ class NetoProductController extends Controller
                 continue;
             }
 
-            // ✅ Use qty_available directly from cache
             $availableQty = $product['qty_available'];
             $inStock = $availableQty >= $qty;
 
@@ -139,13 +144,14 @@ class NetoProductController extends Controller
                 'shipping_weight' => $product['shipping_weight'],
                 'qty_available' => $availableQty,
                 'in_stock' => $inStock,
-                'dropship' => $product['dropship'], // ✅ added
+                'dropship' => $product['dropship'] ?? null,
                 'error' => $inStock ? null : 'Product is not in stock'
             ];
         }
 
         return response()->json($results);
     }
+
 
 
 
