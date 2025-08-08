@@ -14,6 +14,7 @@ class DropshipOrderItem extends Model
         'qty',
         'price',
         'shipping_weight',
+        'name',
     ];
 
     public function order()

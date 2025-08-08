@@ -35,6 +35,7 @@ class DropshipOrderController extends Controller
             'items.*.sku' => 'required|string',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric',
+            'items.*.name' => 'required|string',
         ]);
 
         DB::beginTransaction();
@@ -60,7 +61,7 @@ class DropshipOrderController extends Controller
                 'min_order_fee' => $validated['min_order_fee'],
                 'grand_total' => $validated['grand_total'],
                 'selected_courier' => $validated['selected_courier'],
-                'available_shipping_options' => $validated['available_shipping_options'] ?? null
+                'available_shipping_options' => $request->input('available_shipping_options'),
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -68,6 +69,7 @@ class DropshipOrderController extends Controller
                     'sku' => $item['sku'],
                     'qty' => $item['qty'],
                     'price' => $item['price'],
+                    'name' => $item['name'] ?? null
                 ]);
             }
 
