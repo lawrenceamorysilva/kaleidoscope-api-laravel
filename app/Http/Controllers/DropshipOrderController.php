@@ -4,11 +4,30 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Models\DropshipOrder;
 use App\Models\DropshipOrderItem;
 
 class DropshipOrderController extends Controller
 {
+
+    public function show($id)
+    {
+        $order = DropshipOrder::with('items')->find($id);
+
+        if (!$order) {
+            return response()->json([
+                'message' => 'Order not found',
+                'id' => $id
+            ], 404);
+        }
+
+        return response()->json([
+            'order' => $order
+        ]);
+    }
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([

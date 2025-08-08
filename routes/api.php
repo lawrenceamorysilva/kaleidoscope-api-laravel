@@ -35,7 +35,11 @@ Route::middleware('auth:sanctum')->get('/auth/me', function (Request $request) {
     return response()->json($request->user());
 });
 
+
+Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
+
 // 🔐 Save dropship order
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
+
 });
