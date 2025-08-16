@@ -11,6 +11,43 @@ use App\Models\DropshipOrderItem;
 class DropshipOrderController extends Controller
 {
 
+    public function openSummary()
+    {
+        $userId = Auth::id();
+
+        $orders = DropshipOrder::where('user_id', $userId)
+            ->where('status', 'open')
+            ->select(
+                'id',
+                'first_name',
+                'last_name',
+                'product_total',
+                'dropship_fee',
+                'shipping_total',
+                'grand_total'
+            )
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id'            => $order->id,
+                    'name'          => $order->first_name . ' ' . $order->last_name,
+                    'product_total' => $order->product_total,
+                    'dropship_fee'  => $order->dropship_fee,
+                    'shipping_total'=> $order->shipping_total,
+                    'grand_total'   => $order->grand_total,
+                ];
+            });
+
+        return response()->json([
+            'orders' => $orders
+        ]);
+    }
+
+
+
+
+
     public function show($id)
     {
         $order = DropshipOrder::with('items')->find($id);
