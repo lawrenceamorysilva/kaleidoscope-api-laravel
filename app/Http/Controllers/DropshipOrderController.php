@@ -23,6 +23,7 @@ class DropshipOrderController extends Controller
                 'last_name',
                 'product_total',
                 'dropship_fee',
+                'min_order_fee',
                 'shipping_total',
                 'grand_total'
             )
@@ -34,6 +35,7 @@ class DropshipOrderController extends Controller
                     'name'          => $order->first_name . ' ' . $order->last_name,
                     'product_total' => $order->product_total,
                     'dropship_fee'  => $order->dropship_fee,
+                    'min_order_fee' => $order->min_order_fee,
                     'shipping_total'=> $order->shipping_total,
                     'grand_total'   => $order->grand_total,
                 ];
@@ -172,6 +174,7 @@ class DropshipOrderController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric',
             'items.*.name' => 'required|string',
+            'status' => 'nullable|string|in:open,for_shipping,shipped,cancelled',
         ]);
 
         DB::beginTransaction();
@@ -199,6 +202,7 @@ class DropshipOrderController extends Controller
                 'grand_total' => $validated['grand_total'],
                 'selected_courier' => $validated['selected_courier'] ?? null,
                 'available_shipping_options' => $request->input('available_shipping_options'),
+                'status' => $validated['status'] ?? $order->status,
             ]);
 
             // Replace items: delete existing and recreate
@@ -221,6 +225,35 @@ class DropshipOrderController extends Controller
             return response()->json(['message' => 'Failed to update dropship order'], 500);
         }
     }
+
+
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'order_ids'   => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:dropship_orders,id',
+            'status'      => 'required|string|in:open,for_shipping,fulfilled,canceled',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            DropshipOrder::whereIn('id', $validated['order_ids'])
+                ->update(['status' => $validated['status']]);
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Orders updated successfully',
+                'updated' => $validated['order_ids'],
+                'status'  => $validated['status'],
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('❌ Bulk update failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to update orders'], 500);
+        }
+    }
+
 
 
 

@@ -47,5 +47,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
     Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
     Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
+    Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
 
 });
