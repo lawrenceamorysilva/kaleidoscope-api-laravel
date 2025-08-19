@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\DropshipOrder;
 use App\Models\DropshipOrderItem;
+use Illuminate\Http\JsonResponse;
 
 class DropshipOrderController extends Controller
 {
@@ -253,6 +254,54 @@ class DropshipOrderController extends Controller
             return response()->json(['message' => 'Failed to update orders'], 500);
         }
     }
+
+
+    public function history(Request $request): JsonResponse
+    {
+        $userId = Auth::id();
+        $status = $request->query('status'); // optional filter
+
+        $query = DropshipOrder::where('user_id', $userId)
+            ->whereIn('status', ['for_shipping', 'fulfilled', 'canceled'])
+            ->select(
+                'id',
+                'first_name',
+                'last_name',
+                'status',
+                'product_total',
+                'dropship_fee',
+                'min_order_fee',
+                'shipping_total',
+                'grand_total',
+                'updated_at',
+                'created_at',
+            )
+            ->orderBy('created_at', 'desc');
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $orders = $query->get()->map(function ($order) {
+            return [
+                'id'            => $order->id,
+                'name'          => $order->first_name . ' ' . $order->last_name,
+                'status'        => $order->status,
+                'product_total' => $order->product_total,
+                'dropship_fee'  => $order->dropship_fee,
+                'min_order_fee' => $order->min_order_fee,
+                'shipping_total'=> $order->shipping_total,
+                'grand_total'   => $order->grand_total,
+                'updated_at'    => $order->updated_at->toDateTimeString(),
+                'created_at'    => $order->created_at->toDateTimeString(),
+            ];
+        });
+
+        return response()->json([
+            'orders' => $orders
+        ]);
+    }
+
 
 
 
