@@ -13,11 +13,12 @@ class NetoProductController extends Controller
     public function index(Request $request)
     {
         $dropship = $request->query('dropship'); // 'Yes', 'No', or null
+        $includeImages = $request->boolean('retailer', false); // true if retailer param passed
 
-        // Cache key should vary depending on dropship filter
-        $cacheKey = 'neto_products_all_' . ($dropship ?? 'all');
+        // Cache key should vary depending on dropship filter + retailer flag
+        $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship) {
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
             $query = NetoProduct::select([
                 'sku',
                 'name',
@@ -35,14 +36,18 @@ class NetoProductController extends Controller
                 'updated_at',
             ]);
 
+            if ($includeImages) {
+                $query->addSelect('images');
+            }
+
             if ($dropship === 'Yes' || $dropship === 'No') {
                 $query->where('dropship', $dropship);
             }
 
             return $query->get();
         });
-
     }
+
 
     //used by admin portal
     public function getBySku($sku)
