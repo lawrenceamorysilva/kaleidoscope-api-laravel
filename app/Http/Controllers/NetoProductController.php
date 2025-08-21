@@ -9,18 +9,20 @@ use App\Models\NetoProduct;
 
 class NetoProductController extends Controller
 {
-    //used by admin portal
+    //used by admin portal drop and nondrop pages || retailer portal home
     public function index(Request $request)
     {
         $dropship = $request->query('dropship'); // 'Yes', 'No', or null
         $includeImages = $request->boolean('retailer', false); // true if retailer=1
 
-        // Cache key varies by dropship + retailer
+        // Cache key varies depending on dropship filter + retailer flag
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
+        // Cache for 10 minutes, returns cached result if exists
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
+
+            // Select minimal columns for retailer to speed up query & caching
             if ($includeImages) {
-                // Only return SKU, Name, Brand, Stock, Updated, Images
                 $query = NetoProduct::select([
                     'sku',
                     'name',
@@ -30,7 +32,7 @@ class NetoProductController extends Controller
                     'images',
                 ]);
             } else {
-                // Default full fields
+                // Full columns for other requests
                 $query = NetoProduct::select([
                     'sku',
                     'name',
@@ -49,6 +51,7 @@ class NetoProductController extends Controller
                 ]);
             }
 
+            // Apply dropship filter if provided
             if ($dropship === 'Yes' || $dropship === 'No') {
                 $query->where('dropship', $dropship);
             }
@@ -56,6 +59,7 @@ class NetoProductController extends Controller
             return $query->get();
         });
     }
+
 
 
 
