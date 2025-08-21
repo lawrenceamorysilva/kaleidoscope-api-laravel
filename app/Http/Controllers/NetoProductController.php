@@ -34,13 +34,10 @@ class NetoProductController extends Controller
         // List of products WITHOUT images for home page
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
+
         $products = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
             $query = NetoProduct::query()
-                ->select([
-                    'sku','name','brand','stock_status','dropship_price','updated_at',
-                    // optionally main thumbnail only
-                    'images'
-                ]);
+                ->select(['sku','name','brand','stock_status','dropship_price','updated_at','images']);
 
             if ($dropship === 'Yes' || $dropship === 'No') $query->where('dropship', $dropship);
 
@@ -55,6 +52,7 @@ class NetoProductController extends Controller
                 'images' => $includeImages ? $p->images : null,
             ]);
         });
+
 
         return response()->json([
             'version' => Cache::get('neto_products_version', 1),
