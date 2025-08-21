@@ -9,66 +9,59 @@ use App\Models\NetoProduct;
 
 class NetoProductController extends Controller
 {
-    //used by admin portal drop and nondrop pages || retailer portal home
+    // used by admin portal drop and nondrop pages || retailer portal home
+    // Existing getNetoProducts(Request $request)
     public function index(Request $request)
     {
-        $dropship = $request->query('dropship'); // 'Yes', 'No', or null
-        $includeImages = $request->boolean('retailer', false); // true if retailer=1
+        $sku = $request->query('sku');       // optional, new
+        $dropship = $request->query('dropship');
+        $includeImages = $request->boolean('retailer', false);
 
+        if ($sku) {
+            // Single product with images
+            $product = NetoProduct::where('sku', $sku)
+                ->when($dropship === 'Yes' || $dropship === 'No', fn($q) => $q->where('dropship', $dropship))
+                ->first();
+
+            if (!$product) return response()->json(['error' => 'Product not found'], 404);
+
+            return response()->json([
+                'version' => Cache::get('neto_products_version', 1),
+                'product' => $product
+            ]);
+        }
+
+        // List of products WITHOUT images for home page
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
-        // Get the current version or use timestamp if missing
-        $version = Cache::get('neto_products_version', now()->timestamp);
+        $products = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
+            $query = NetoProduct::query()
+                ->select([
+                    'sku','name','brand','stock_status','dropship_price','updated_at',
+                    // optionally main thumbnail only
+                    'images'
+                ]);
 
-        $products = Cache::remember($cacheKey, now()->addHours(6), function () use ($dropship, $includeImages) {
-            if ($includeImages) {
-                $query = \DB::table('neto_products')
-                    ->select([
-                        'sku',
-                        'name',
-                        'brand',
-                        'stock_status as stock',
-                        'updated_at',
-                        'images',
-                    ]);
+            if ($dropship === 'Yes' || $dropship === 'No') $query->where('dropship', $dropship);
 
-                if ($dropship === 'Yes' || $dropship === 'No') {
-                    $query->where('dropship', $dropship);
-                }
-
-                return $query->get()->toArray();
-            }
-
-            // Full columns for other requests
-            $query = NetoProduct::select([
-                'sku',
-                'name',
-                'brand',
-                'stock_status',
-                'dropship',
-                'dropship_price',
-                'surcharge',
-                'qty',
-                'qty_buffer',
-                'shipping_weight',
-                'shipping_length',
-                'shipping_width',
-                'shipping_height',
-                'updated_at',
+            // Strip images if not retailer view to save payload
+            return $query->get()->map(fn($p) => [
+                'sku' => $p->sku,
+                'name' => $p->name,
+                'brand' => $p->brand,
+                'stock_status' => $p->stock_status,
+                'dropship_price' => $p->dropship_price,
+                'updated_at' => $p->updated_at,
+                'images' => $includeImages ? $p->images : null,
             ]);
-
-            if ($dropship === 'Yes' || $dropship === 'No') {
-                $query->where('dropship', $dropship);
-            }
-
-            return $query->get()->toArray();
         });
 
         return response()->json([
-            'version' => $version,
+            'version' => Cache::get('neto_products_version', 1),
             'products' => $products,
         ]);
     }
+
 
 
 
