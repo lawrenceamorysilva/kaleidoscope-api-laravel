@@ -15,13 +15,12 @@ class NetoProductController extends Controller
         $dropship = $request->query('dropship'); // 'Yes', 'No', or null
         $includeImages = $request->boolean('retailer', false); // true if retailer=1
 
-        // Cache key varies depending on dropship filter + retailer flag
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
-        // Cache for 6 hours for retailer portal (change as needed)
-        return Cache::remember($cacheKey, now()->addHours(6), function () use ($dropship, $includeImages) {
+        // Get the current version or use timestamp if missing
+        $version = Cache::get('neto_products_version', now()->timestamp);
 
-            // Use raw query if retailer (minimal columns) to speed up
+        $products = Cache::remember($cacheKey, now()->addHours(6), function () use ($dropship, $includeImages) {
             if ($includeImages) {
                 $query = \DB::table('neto_products')
                     ->select([
@@ -37,10 +36,10 @@ class NetoProductController extends Controller
                     $query->where('dropship', $dropship);
                 }
 
-                return $query->get()->toArray(); // cached as array, ready for JSON
+                return $query->get()->toArray();
             }
 
-            // Otherwise, full Eloquent model for admin/other requests
+            // Full columns for other requests
             $query = NetoProduct::select([
                 'sku',
                 'name',
@@ -62,9 +61,15 @@ class NetoProductController extends Controller
                 $query->where('dropship', $dropship);
             }
 
-            return $query->get()->toArray(); // cache as array to avoid model hydration
+            return $query->get()->toArray();
         });
+
+        return response()->json([
+            'version' => $version,
+            'products' => $products,
+        ]);
     }
+
 
 
 
