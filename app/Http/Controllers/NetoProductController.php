@@ -13,31 +13,40 @@ class NetoProductController extends Controller
     public function index(Request $request)
     {
         $dropship = $request->query('dropship'); // 'Yes', 'No', or null
-        $includeImages = $request->boolean('retailer', false); // true if retailer param passed
+        $includeImages = $request->boolean('retailer', false); // true if retailer=1
 
-        // Cache key should vary depending on dropship filter + retailer flag
+        // Cache key varies by dropship + retailer
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
-            $query = NetoProduct::select([
-                'sku',
-                'name',
-                'brand',
-                'stock_status',
-                'dropship',
-                'dropship_price',
-                'surcharge',
-                'qty',
-                'qty_buffer',
-                'shipping_weight',
-                'shipping_length',
-                'shipping_width',
-                'shipping_height',
-                'updated_at',
-            ]);
-
             if ($includeImages) {
-                $query->addSelect('images');
+                // Only return SKU, Name, Brand, Stock, Updated, Images
+                $query = NetoProduct::select([
+                    'sku',
+                    'name',
+                    'brand',
+                    'stock_status as stock',
+                    'updated_at',
+                    'images',
+                ]);
+            } else {
+                // Default full fields
+                $query = NetoProduct::select([
+                    'sku',
+                    'name',
+                    'brand',
+                    'stock_status',
+                    'dropship',
+                    'dropship_price',
+                    'surcharge',
+                    'qty',
+                    'qty_buffer',
+                    'shipping_weight',
+                    'shipping_length',
+                    'shipping_width',
+                    'shipping_height',
+                    'updated_at',
+                ]);
             }
 
             if ($dropship === 'Yes' || $dropship === 'No') {
@@ -47,6 +56,7 @@ class NetoProductController extends Controller
             return $query->get();
         });
     }
+
 
 
     //used by admin portal
