@@ -18,47 +18,54 @@ class NetoProductController extends Controller
         // Cache key varies depending on dropship filter + retailer flag
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
 
-        // Cache for 10 minutes, returns cached result if exists
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
+        // Cache for 6 hours for retailer portal (change as needed)
+        return Cache::remember($cacheKey, now()->addHours(6), function () use ($dropship, $includeImages) {
 
-            // Select minimal columns for retailer to speed up query & caching
+            // Use raw query if retailer (minimal columns) to speed up
             if ($includeImages) {
-                $query = NetoProduct::select([
-                    'sku',
-                    'name',
-                    'brand',
-                    'stock_status as stock',
-                    'updated_at',
-                    'images',
-                ]);
-            } else {
-                // Full columns for other requests
-                $query = NetoProduct::select([
-                    'sku',
-                    'name',
-                    'brand',
-                    'stock_status',
-                    'dropship',
-                    'dropship_price',
-                    'surcharge',
-                    'qty',
-                    'qty_buffer',
-                    'shipping_weight',
-                    'shipping_length',
-                    'shipping_width',
-                    'shipping_height',
-                    'updated_at',
-                ]);
+                $query = \DB::table('neto_products')
+                    ->select([
+                        'sku',
+                        'name',
+                        'brand',
+                        'stock_status as stock',
+                        'updated_at',
+                        'images',
+                    ]);
+
+                if ($dropship === 'Yes' || $dropship === 'No') {
+                    $query->where('dropship', $dropship);
+                }
+
+                return $query->get()->toArray(); // cached as array, ready for JSON
             }
 
-            // Apply dropship filter if provided
+            // Otherwise, full Eloquent model for admin/other requests
+            $query = NetoProduct::select([
+                'sku',
+                'name',
+                'brand',
+                'stock_status',
+                'dropship',
+                'dropship_price',
+                'surcharge',
+                'qty',
+                'qty_buffer',
+                'shipping_weight',
+                'shipping_length',
+                'shipping_width',
+                'shipping_height',
+                'updated_at',
+            ]);
+
             if ($dropship === 'Yes' || $dropship === 'No') {
                 $query->where('dropship', $dropship);
             }
 
-            return $query->get();
+            return $query->get()->toArray(); // cache as array to avoid model hydration
         });
     }
+
 
 
 
