@@ -16,6 +16,23 @@ Route::middleware('api')->group(function () {
     Route::post('/fallback_login', [FallbackLoginController::class, 'login']);
 });
 
+Route::post('/debug-fallback-login', function (\Illuminate\Http\Request $request) {
+    \Log::info('iPad Debug Login Attempt', [
+        'raw_input' => $request->all(),
+        'raw_email' => $request->input('email'),
+        'normalized_email' => strtolower(trim($request->input('email')))
+    ]);
+
+    return response()->json([
+        'received_email' => $request->input('email'),
+        'normalized_email' => strtolower(trim($request->input('email'))),
+        'all_inputs' => $request->all()
+    ]);
+});
+
+
+
+
 // 🔐 Login to get token
 Route::post('/login', function (Request $request) {
     $credentials = $request->only('email', 'password');
