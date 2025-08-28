@@ -4,16 +4,24 @@ return [
 
     'paths' => ['api/*', 'auth/*', 'fallback_login'],
 
-    'allowed_methods' => ['*'],
+    'allowed_origins' => [
+        //local
+        'http://api.localhost:8000',
+        'http://admin.localhost:4201',
+        'http://retailer.localhost:4200',
 
-    /*'allowed_origins' => [
-        'http://admin.localhost:4201',                         // ✅ Local dev
-        'http://retailer.localhost:4200',                      // ✅ Local dev
-        'https://staging-admin.kaleidoscope.com.au',           // ✅ Staging admin portal
-        'https://staging-retailer.kaleidoscope.com.au'         //✅ Staging retailer portal
-    ],*/
+        //staging
+        'https://staging-admin.kaleidoscope.com.au',
+        'https://staging-retailer.kaleidoscope.com.au',
+        'https://staging-api.kaleidoscope.com.au',
 
-    'allowed_origins' => ['*'],
+        //prod
+        'https://admin.kaleidoscope.com.au',
+        'https://retailer.kaleidoscope.com.au',
+        'https://api.kaleidoscope.com.au',
+    ],
+
+    /*'allowed_origins' => ['*'],*/ //turn this on when ipad other mobile devices are having issues logging in
 
     'allowed_origins_patterns' => [], // ✅ Leave empty to prioritize allowed_origins
 
@@ -23,6 +31,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 ];
 
