@@ -4,7 +4,7 @@ return [
 
     'paths' => ['api/*', 'auth/*', 'fallback_login'],
 
-    'allowed_origins' => [
+    /*'allowed_origins' => [
         //local
         'http://api.localhost:8000',
         'http://admin.localhost:4201',
@@ -19,9 +19,9 @@ return [
         'https://admin.kaleidoscope.com.au',
         'https://retailer.kaleidoscope.com.au',
         'https://api.kaleidoscope.com.au',
-    ],
+    ],*/
 
-    /*'allowed_origins' => ['*'],*/ //turn this on when ipad other mobile devices are having issues logging in
+    'allowed_origins' => ['*'], //turn this on when ipad other mobile devices are having issues logging in
 
     'allowed_origins_patterns' => [], // ✅ Leave empty to prioritize allowed_origins
 
