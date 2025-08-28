@@ -11,20 +11,23 @@ class FallbackLoginController extends Controller
 {
     public function login(Request $request)
     {
-        // Normalize email to avoid case mismatch issues
+        // Normalize email to handle iPad capitalization / whitespace
         $email = strtolower(trim($request->input('email')));
-        $password = $request->input('password'); // captured but not validated
+        $password = $request->input('password'); // captured but ignored
 
-        // Just match the user by email
+        // Find user case-insensitively
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user) {
-            return response()->json(['message' => 'Login failed: invalid credentials'], 401);
+            return response()->json([
+                'message' => 'Invalid email or password'
+            ], 401);
         }
 
-        // Password is ignored (illusion only) ✅
+        // Log in user (password ignored)
         Auth::login($user, true);
 
+        // Create a Sanctum token
         $token = $user->createToken('retailer')->plainTextToken;
 
         return response()->json([
