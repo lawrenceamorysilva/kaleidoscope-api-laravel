@@ -21,7 +21,7 @@ return [
         'https://api.kaleidoscope.com.au',
     ],*/
 
-    'allowed_origins' => ['*'], //turn this on when ipad other mobile devices are having issues logging in
+    'allowed_origins' => ['*'], //turn this on when ipad other mobile devices are having issues logging in / apparently only the old ipads are having issues...
 
     'allowed_origins_patterns' => [], // ✅ Leave empty to prioritize allowed_origins
 
