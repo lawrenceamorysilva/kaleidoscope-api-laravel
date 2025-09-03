@@ -30,6 +30,7 @@ class DropshipOrder extends Model
         'grand_total',
         'selected_courier',
         'available_shipping_options',
+        'status'
     ];
 
     protected $casts = [

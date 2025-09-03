@@ -148,8 +148,25 @@ class DropshipOrderController extends Controller
     }
 
 
+    /* used to simply update status OR to literally update every part of the dropship order*/
     public function update(Request $request, $id)
     {
+        $order = DropshipOrder::findOrFail($id);
+
+        // ✅ Case 1: Status-only update (remove/cancel/etc.)
+        if ($request->has('status') && count($request->all()) === 1) {
+            $validated = $request->validate([
+                'status' => 'required|string|in:open,for_shipping,fulfilled,canceled,removed',
+            ]);
+
+            $order->update(['status' => $validated['status']]);
+
+            return response()->json([
+                'message' => "Order status updated to {$validated['status']}"
+            ]);
+        }
+
+        // ✅ Case 2: Full update
         $validated = $request->validate([
             'po_number' => 'nullable|string',
             'delivery_instructions' => 'nullable|string',
@@ -175,14 +192,11 @@ class DropshipOrderController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric',
             'items.*.name' => 'required|string',
-            'status' => 'nullable|string|in:open,for_shipping,shipped,cancelled',
+            'status' => 'nullable|string|in:open,for_shipping,fulfilled,canceled,removed',
         ]);
 
         DB::beginTransaction();
         try {
-            $order = DropshipOrder::findOrFail($id);
-
-            // Update order fields
             $order->update([
                 'po_number' => $validated['po_number'] ?? null,
                 'delivery_instructions' => $validated['delivery_instructions'] ?? null,
@@ -206,7 +220,7 @@ class DropshipOrderController extends Controller
                 'status' => $validated['status'] ?? $order->status,
             ]);
 
-            // Replace items: delete existing and recreate
+            // ✅ Replace items safely
             $order->items()->delete();
             foreach ($validated['items'] as $item) {
                 $order->items()->create([
@@ -218,7 +232,6 @@ class DropshipOrderController extends Controller
             }
 
             DB::commit();
-
             return response()->json(['message' => 'Dropship order updated successfully']);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -226,6 +239,8 @@ class DropshipOrderController extends Controller
             return response()->json(['message' => 'Failed to update dropship order'], 500);
         }
     }
+
+
 
 
     public function bulkUpdateStatus(Request $request)
