@@ -13,17 +13,26 @@ class NetoProductController extends Controller
     // Existing getNetoProducts(Request $request)
     public function index(Request $request)
     {
-        $sku = $request->query('sku');       // optional, new
+        $sku = $request->query('sku');
         $dropship = $request->query('dropship');
-        $includeImages = $request->boolean('retailer', false);
+        $retailer = $request->boolean('retailer', false); // distinguishes portals
 
         if ($sku) {
-            // Single product with images
-            $product = NetoProduct::where('sku', $sku)
+            // Single product (always return full data for admin, slimmed for retailer)
+            $query = NetoProduct::query();
+
+            if ($retailer) {
+                $query->select(['sku','name','brand','stock_status','dropship_price','images']);
+            }
+
+            $product = $query
                 ->when($dropship === 'Yes' || $dropship === 'No', fn($q) => $q->where('dropship', $dropship))
+                ->where('sku', $sku)
                 ->first();
 
-            if (!$product) return response()->json(['error' => 'Product not found'], 404);
+            if (!$product) {
+                return response()->json(['error' => 'Product not found'], 404);
+            }
 
             return response()->json([
                 'version' => Cache::get('neto_products_version', 1),
@@ -31,34 +40,50 @@ class NetoProductController extends Controller
             ]);
         }
 
-        // List of products WITHOUT images for home page
-        $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($includeImages ? '1' : '0');
+        // Cache key should vary depending on dropship filter and portal
+        $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($retailer ? '1' : '0');
 
+        $products = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $retailer) {
+            $query = NetoProduct::query();
 
-        $products = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $includeImages) {
-            $query = NetoProduct::query()
-                ->select(['sku','name','brand','stock_status','dropship_price','updated_at','images']);
+            if ($retailer) {
+                // Retailer = slimmed down list
+                $query->select([
+                    'sku','name','brand','stock_status','dropship_price','updated_at','images'
+                ]);
+            } else {
+                // Admin = full dataset
+                $query->select([
+                    'sku',
+                    'name',
+                    'brand',
+                    'stock_status',
+                    'dropship',
+                    'dropship_price',
+                    'surcharge',
+                    'qty',
+                    'qty_buffer',
+                    'shipping_weight',
+                    'shipping_length',
+                    'shipping_width',
+                    'shipping_height',
+                    'updated_at'
+                ]);
+            }
 
-            if ($dropship === 'Yes' || $dropship === 'No') $query->where('dropship', $dropship);
+            if ($dropship === 'Yes' || $dropship === 'No') {
+                $query->where('dropship', $dropship);
+            }
 
-            // Strip images if not retailer view to save payload
-            return $query->get()->map(fn($p) => [
-                'sku' => $p->sku,
-                'name' => $p->name,
-                'brand' => $p->brand,
-                'stock_status' => $p->stock_status,
-                'dropship_price' => $p->dropship_price,
-                'updated_at' => $p->updated_at,
-                'images' => $includeImages ? $p->images : null,
-            ]);
+            return $query->get();
         });
-
 
         return response()->json([
             'version' => Cache::get('neto_products_version', 1),
             'products' => $products,
         ]);
     }
+
 
 
 
