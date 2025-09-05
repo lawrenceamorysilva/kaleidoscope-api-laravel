@@ -75,7 +75,6 @@ class NetoProductController extends Controller
                     'shipping_length',
                     'shipping_width',
                     'shipping_height',
-                    'images',
                     'updated_at'
                 ]);
             }
