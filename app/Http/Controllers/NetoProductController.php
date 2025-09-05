@@ -22,7 +22,8 @@ class NetoProductController extends Controller
             $query = NetoProduct::query();
 
             if ($retailer) {
-                $query->select(['sku','name','brand','stock_status','dropship_price','images']);
+                //$query->select(['sku','name','brand','stock_status','dropship_price','images']);
+                $query->select(['name','images']);
             }
 
             $product = $query
