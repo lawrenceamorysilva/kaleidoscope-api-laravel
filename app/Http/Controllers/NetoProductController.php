@@ -11,6 +11,7 @@ class NetoProductController extends Controller
 {
     // used by admin portal drop and nondrop pages || retailer portal home
     // Existing getNetoProducts(Request $request)
+
     public function index(Request $request)
     {
         $sku = $request->query('sku');
@@ -19,7 +20,7 @@ class NetoProductController extends Controller
 
         if ($sku) {
             // Single product (always return full data for admin, slimmed for retailer)
-            $query = NetoProduct::query();
+            $query = \DB::table('neto_products');
 
             if ($retailer) {
                 //$query->select(['sku','name','brand','stock_status','dropship_price','images']);
@@ -44,8 +45,8 @@ class NetoProductController extends Controller
         // Cache key should vary depending on dropship filter and portal
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($retailer ? '1' : '0');
 
-        $products = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $retailer) {
-            $query = NetoProduct::query();
+        $products = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($dropship, $retailer) {
+            $query = \DB::table('neto_products');
 
             if ($retailer) {
                 // Retailer = slimmed down list
@@ -76,7 +77,8 @@ class NetoProductController extends Controller
                 $query->where('dropship', $dropship);
             }
 
-            return $query->get();
+            // ✅ Cast rows to array (lighter than Eloquent collections)
+            return $query->get()->map(fn($row) => (array)$row)->all();
         });
 
         return response()->json([
@@ -84,6 +86,7 @@ class NetoProductController extends Controller
             'products' => $products,
         ]);
     }
+
 
 
 
