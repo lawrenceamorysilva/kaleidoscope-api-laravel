@@ -11,7 +11,7 @@ class NetoProductController extends Controller
 {
     // used by admin portal drop and nondrop pages || retailer portal home
     // Existing getNetoProducts(Request $request)
-
+    //$query->select(['sku','name','brand','stock_status','dropship_price','images']);
     public function index(Request $request)
     {
         $sku = $request->query('sku');
@@ -23,8 +23,9 @@ class NetoProductController extends Controller
             $query = \DB::table('neto_products');
 
             if ($retailer) {
-                //$query->select(['sku','name','brand','stock_status','dropship_price','images']);
-                $query->select(['name','images']);
+                $query->select(['name', 'images']);
+            } else {
+                $query->select(['*']);
             }
 
             $product = $query
@@ -36,6 +37,11 @@ class NetoProductController extends Controller
                 return response()->json(['error' => 'Product not found'], 404);
             }
 
+            // ✅ Decode images if present
+            if (isset($product->images)) {
+                $product->images = json_decode($product->images, true);
+            }
+
             return response()->json([
                 'version' => Cache::get('neto_products_version', 1),
                 'product' => $product
@@ -45,13 +51,13 @@ class NetoProductController extends Controller
         // Cache key should vary depending on dropship filter and portal
         $cacheKey = 'neto_products_all_' . ($dropship ?? 'all') . '_retailer_' . ($retailer ? '1' : '0');
 
-        $products = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($dropship, $retailer) {
+        $products = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dropship, $retailer) {
             $query = \DB::table('neto_products');
 
             if ($retailer) {
                 // Retailer = slimmed down list
                 $query->select([
-                    'sku','name','brand','stock_status','dropship_price','updated_at'
+                    'sku', 'name', 'brand', 'stock_status', 'dropship_price', 'updated_at'
                 ]);
             } else {
                 // Admin = full dataset
@@ -69,6 +75,7 @@ class NetoProductController extends Controller
                     'shipping_length',
                     'shipping_width',
                     'shipping_height',
+                    'images',
                     'updated_at'
                 ]);
             }
@@ -77,8 +84,14 @@ class NetoProductController extends Controller
                 $query->where('dropship', $dropship);
             }
 
-            // ✅ Cast rows to array (lighter than Eloquent collections)
-            return $query->get()->map(fn($row) => (array)$row)->all();
+            // ✅ Decode images if present in results
+            return $query->get()->map(function ($row) {
+                $row = (array) $row;
+                if (isset($row['images'])) {
+                    $row['images'] = json_decode($row['images'], true);
+                }
+                return $row;
+            })->all();
         });
 
         return response()->json([
@@ -86,6 +99,7 @@ class NetoProductController extends Controller
             'products' => $products,
         ]);
     }
+
 
 
 
