@@ -49,7 +49,7 @@ class NetoProductController extends Controller
             if ($retailer) {
                 // Retailer = slimmed down list
                 $query->select([
-                    'sku','name','brand','stock_status','dropship_price','updated_at','images'
+                    'sku','name','brand','stock_status','dropship_price','updated_at'
                 ]);
             } else {
                 // Admin = full dataset
