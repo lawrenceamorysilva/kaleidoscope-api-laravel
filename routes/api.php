@@ -3,11 +3,19 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// Retailer controllers
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\NetoProductController;
 use App\Http\Controllers\Auth\FallbackLoginController;
 use App\Http\Controllers\DropshipOrderController;
 
+// Admin controllers
+use App\Http\Controllers\Admin\AdminAuthController;
+
+// ----------------------
+// Retailer Portal routes
+// ----------------------
 Route::middleware('api')->group(function () {
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
@@ -16,7 +24,8 @@ Route::middleware('api')->group(function () {
     Route::post('/fallback_login', [FallbackLoginController::class, 'login']);
 });
 
-Route::post('/debug-fallback-login', function (\Illuminate\Http\Request $request) {
+// Debug login (optional)
+Route::post('/debug-fallback-login', function (Request $request) {
     \Log::info('iPad Debug Login Attempt', [
         'raw_input' => $request->all(),
         'raw_email' => $request->input('email'),
@@ -30,10 +39,7 @@ Route::post('/debug-fallback-login', function (\Illuminate\Http\Request $request
     ]);
 });
 
-
-
-
-// 🔐 Login to get token
+// Retailer login & auth
 Route::post('/login', function (Request $request) {
     $credentials = $request->only('email', 'password');
 
@@ -47,18 +53,11 @@ Route::post('/login', function (Request $request) {
     return response()->json(['token' => $token]);
 });
 
-// 🔐 Get authenticated user
 Route::middleware('auth:sanctum')->get('/auth/me', function (Request $request) {
     return response()->json($request->user());
 });
 
-
-/*Route::middleware('auth:sanctum')->put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
-Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
-
-Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);*/
-
-// 🔐 Save dropship order
+// Retailer dropship orders
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
     Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
@@ -66,5 +65,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dropship-orders/history', [DropshipOrderController::class, 'history']);
     Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
     Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
+});
 
+// ----------------------
+// Admin Portal routes
+// ----------------------
+Route::prefix('admin')->group(function () {
+    // Login (no auth yet)
+    Route::post('/login', [AdminAuthController::class, 'login']);
+
+    // Protected routes (auth:admin guard)
+    Route::middleware('auth:admin')->group(function () {
+        Route::get('/me', [AdminAuthController::class, 'me']);
+        Route::post('/logout', [AdminAuthController::class, 'logout']);
+
+        // Example: future admin routes
+        // Route::apiResource('/users', AdminUserController::class);
+        // Route::apiResource('/orders', OrderController::class);
+        // Route::apiResource('/faq', FaqController::class);
+        // Route::apiResource('/terms', TermsController::class);
+    });
 });
