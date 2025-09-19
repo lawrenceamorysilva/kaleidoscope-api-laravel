@@ -223,6 +223,7 @@ class SyncNetoProducts extends Command
                     'shipping_weight' => $product->shipping_weight,
                     'qty_available' => ($product->qty ?? 0) - ($product->qty_buffer ?? 0),
                     'qty_buffer' => $product->qty_buffer,
+                    'updated_at' => $product->updated_at ? $product->updated_at->toDateTimeString(): null,
                 ],
             ];
         })->toArray();
