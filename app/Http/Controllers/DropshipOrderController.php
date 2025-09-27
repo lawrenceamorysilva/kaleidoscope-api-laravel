@@ -399,11 +399,28 @@ class DropshipOrderController extends Controller
         foreach ($orders as $do) {
             if (!isset($do['items']) || !count($do['items'])) continue;
 
-            $poId = "{$do['username']} {$do['username']} DS ";
-            $poId .= trim(($do['last_name'] ?? '') . ' ' . ($do['business_name'] ?? '')) . ' ';
-            $poId .= $now->format('d/m/y') . '(' . count($do['items']) . 'ctn)';
+            // Purchase Order ID (concatenation as per spec, no username)
+            $poId = ($do['po_number'] ?? '') . ' '
+                . trim(($do['last_name'] ?? '') . ' ' . ($do['business_name'] ?? '')) . ' '
+                . $now->format('YmdHi') . 'DO'
+                . ($do['id'] ?? '');
 
-            $customerInstructions = trim(($do['delivery_instructions'] ?? '') . ' ' . ($do['authority_to_leave'] ?? ''));
+            // Customer Instructions + Delivery Instructions Formatting
+            $deliveryInstructions = trim($do['delivery_instructions'] ?? '');
+            $authToLeave = !empty($do['authority_to_leave']) && $do['authority_to_leave'] == 1;
+
+            if ($authToLeave && $deliveryInstructions !== '') {
+                $customerInstructions = 'AUTHORITY TO LEAVE | ' . $deliveryInstructions;
+            } elseif ($authToLeave) {
+                $customerInstructions = 'AUTHORITY TO LEAVE';
+            } else {
+                $customerInstructions = $deliveryInstructions;
+            }
+
+
+            // Shipping Addresses
+            $shipAddress1 = $do['shipping_line1'] ?? '';
+            $shipAddress2 = $do['shipping_line2'] ?? '';
 
             foreach ($do['items'] as $doi) {
                 fputcsv($file, [
@@ -413,8 +430,8 @@ class DropshipOrderController extends Controller
                     $do['first_name'] ?? '',
                     $do['last_name'] ?? '',
                     $do['business_name'] ?? '',
-                    $do['shipping_address_line1'] ?? '',
-                    $do['shipping_address_line2'] ?? '',
+                    $shipAddress1,
+                    $shipAddress2,
                     $do['suburb'] ?? '',
                     $do['state'] ?? '',
                     $do['postcode'] ?? '',
@@ -438,8 +455,8 @@ class DropshipOrderController extends Controller
                     $do['first_name'] ?? '',
                     $do['last_name'] ?? '',
                     $do['business_name'] ?? '',
-                    $do['shipping_address_line1'] ?? '',
-                    $do['shipping_address_line2'] ?? '',
+                    $shipAddress1,
+                    $shipAddress2,
                     $do['suburb'] ?? '',
                     $do['state'] ?? '',
                     $do['postcode'] ?? '',
@@ -462,8 +479,8 @@ class DropshipOrderController extends Controller
                 $do['first_name'] ?? '',
                 $do['last_name'] ?? '',
                 $do['business_name'] ?? '',
-                $do['shipping_address_line1'] ?? '',
-                $do['shipping_address_line2'] ?? '',
+                $shipAddress1,
+                $shipAddress2,
                 $do['suburb'] ?? '',
                 $do['state'] ?? '',
                 $do['postcode'] ?? '',
@@ -477,6 +494,7 @@ class DropshipOrderController extends Controller
                 'Dropshipping'
             ]);
         }
+
 
         fclose($file);
 
