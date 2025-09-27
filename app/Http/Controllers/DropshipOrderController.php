@@ -320,5 +320,198 @@ class DropshipOrderController extends Controller
 
 
 
+    //ADMIN PORTAL STUFF BELOW:::
+
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $orders = DropshipOrder::with(['items', 'user:id,username'])
+            ->where('status', 'for_shipping')
+            ->whereNull('dropship_order_filename_id')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id'                   => $order->id,
+                    'username'             => optional($order->user)->username,
+                    'po_number'            => $order->po_number,
+                    'delivery_instructions'=> $order->delivery_instructions,
+                    'authority_to_leave'   => $order->authority_to_leave,
+                    'first_name'           => $order->first_name,
+                    'last_name'            => $order->last_name,
+                    'business_name'        => $order->business_name,
+                    'shipping_line1'       => $order->shipping_address_line1,
+                    'shipping_line2'       => $order->shipping_address_line2,
+                    'suburb'               => $order->suburb,
+                    'state'                => $order->state,
+                    'postcode'             => $order->postcode,
+                    'phone'                => $order->phone,
+                    'product_total'        => $order->product_total,
+                    'dropship_fee'         => $order->dropship_fee,
+                    'min_order_fee'        => $order->min_order_fee,
+                    'shipping_total'       => $order->shipping_total,
+                    'grand_total'          => $order->grand_total,
+                    'selected_courier'     => $order->selected_courier,
+                    'items' => $order->items->map(function ($item) {
+                        return [
+                            'sku'   => $item->sku,
+                            'name'  => $item->name,
+                            'qty'   => $item->qty,
+                            'price' => $item->price,
+                        ];
+                    })->values(),
+                ];
+            })->values();
+
+        return response()->json(['orders' => $orders]);
+    }
+
+
+    public function exportCsv(Request $request)
+    {
+        $orders = $request->input('orders', []);
+
+        if (empty($orders)) {
+            return response()->json(['message' => 'No orders provided'], 400);
+        }
+
+
+        $now = \Carbon\Carbon::now();
+        $filename = 'kaldropshipping_orders_' . $now->format('dmY_His') . '.csv';
+        $exportDir = storage_path('app/public/exports');
+
+        // Ensure the exports directory exists
+        if (!file_exists($exportDir)) {
+            mkdir($exportDir, 0755, true);
+        }
+
+        $filePath = $exportDir . "/{$filename}";
+        $file = fopen($filePath, 'w');
+
+        // CSV header
+        $header = [
+            'Username','Purchase Order ID','Customer Instructions','Ship First Name','Ship Last Name',
+            'Ship Company','Ship Address Line 1','Ship Address Line 2','Ship City','Ship State',
+            'Ship Post Code','Ship Phone','Shipping Cost','Order Line SKU','Order Line Qty',
+            'Shipping Method','Order Line Unit Price','Signature Required','Order Type'
+        ];
+        fputcsv($file, $header);
+
+        foreach ($orders as $do) {
+            if (!isset($do['items']) || !count($do['items'])) continue;
+
+            $poId = "{$do['username']} {$do['username']} DS ";
+            $poId .= trim(($do['last_name'] ?? '') . ' ' . ($do['business_name'] ?? '')) . ' ';
+            $poId .= $now->format('d/m/y') . '(' . count($do['items']) . 'ctn)';
+
+            $customerInstructions = trim(($do['delivery_instructions'] ?? '') . ' ' . ($do['authority_to_leave'] ?? ''));
+
+            foreach ($do['items'] as $doi) {
+                fputcsv($file, [
+                    $do['username'] ?? '',
+                    $poId,
+                    $customerInstructions,
+                    $do['first_name'] ?? '',
+                    $do['last_name'] ?? '',
+                    $do['business_name'] ?? '',
+                    $do['shipping_address_line1'] ?? '',
+                    $do['shipping_address_line2'] ?? '',
+                    $do['suburb'] ?? '',
+                    $do['state'] ?? '',
+                    $do['postcode'] ?? '',
+                    $do['phone'] ?? '',
+                    $do['shipping_total'] ?? 0,
+                    $doi['sku'] ?? '',
+                    $doi['qty'] ?? 1,
+                    $do['selected_courier'] ?? '',
+                    $doi['price'] ?? 0,
+                    'No',
+                    'Dropshipping'
+                ]);
+            }
+
+            // MIN-ORDER row
+            if (!empty($do['min_order_fee']) && $do['min_order_fee'] > 0) {
+                fputcsv($file, [
+                    $do['username'] ?? '',
+                    $poId,
+                    $customerInstructions,
+                    $do['first_name'] ?? '',
+                    $do['last_name'] ?? '',
+                    $do['business_name'] ?? '',
+                    $do['shipping_address_line1'] ?? '',
+                    $do['shipping_address_line2'] ?? '',
+                    $do['suburb'] ?? '',
+                    $do['state'] ?? '',
+                    $do['postcode'] ?? '',
+                    $do['phone'] ?? '',
+                    $do['shipping_total'] ?? 0,
+                    'MIN-ORDER',
+                    1,
+                    $do['selected_courier'] ?? '',
+                    $do['min_order_fee'],
+                    'No',
+                    'Dropshipping'
+                ]);
+            }
+
+            // ADROP row
+            fputcsv($file, [
+                $do['username'] ?? '',
+                $poId,
+                $customerInstructions,
+                $do['first_name'] ?? '',
+                $do['last_name'] ?? '',
+                $do['business_name'] ?? '',
+                $do['shipping_address_line1'] ?? '',
+                $do['shipping_address_line2'] ?? '',
+                $do['suburb'] ?? '',
+                $do['state'] ?? '',
+                $do['postcode'] ?? '',
+                $do['phone'] ?? '',
+                $do['shipping_total'] ?? 0,
+                'ADROP',
+                1,
+                $do['selected_courier'] ?? '',
+                11,
+                'No',
+                'Dropshipping'
+            ]);
+        }
+
+        fclose($file);
+
+        // insert into dropship_order_filename
+        $dofId = \DB::table('dropship_order_filename')->insertGetId([
+            'filename' => $filename,
+            'created_at' => $now,
+            'dl_counter' => 1,
+            'admin_users_id' => \Auth::id(),
+            'dl_date' => $now
+        ]);
+
+        // update dropship_orders
+        $orderIds = array_column($orders, 'id');
+        \DB::table('dropship_orders')
+            ->whereIn('id', $orderIds)
+            ->update([
+                'dropship_order_filename_id' => $dofId,
+                'updated_at' => $now
+            ]);
+
+        // Instead of immediate download, return URL for Angular
+        $downloadUrl = asset("storage/exports/{$filename}");
+
+        return response()->json([
+            'message' => 'CSV ready',
+            'downloadUrl' => $downloadUrl
+        ]);
+    }
+
+
+
+
+
+
+
 
 }

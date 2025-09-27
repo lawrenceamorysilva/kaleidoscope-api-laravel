@@ -40,7 +40,14 @@ class DropshipOrder extends Model
 
     public function items()
     {
-        return $this->hasMany(DropshipOrderItem::class);
+        return $this->hasMany(DropshipOrderItem::class, 'dropship_order_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+
 }
 

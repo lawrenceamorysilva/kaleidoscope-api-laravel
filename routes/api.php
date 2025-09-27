@@ -14,15 +14,20 @@ use App\Http\Controllers\DropshipOrderController;
 use App\Http\Controllers\Admin\AdminAuthController;
 
 // ----------------------
-// Retailer Portal routes
+// Retailer Portal | Admin Portal routes
 // ----------------------
 Route::middleware('api')->group(function () {
+    //shared
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
+
+    //retailer portal
     Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
     Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
     Route::post('/fallback_login', [FallbackLoginController::class, 'login']);
+
 });
+
 
 // Debug login (optional)
 Route::post('/debug-fallback-login', function (Request $request) {
@@ -78,6 +83,9 @@ Route::prefix('admin')->group(function () {
     Route::middleware('auth:admin')->group(function () {
         Route::get('/me', [AdminAuthController::class, 'me']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);
+
+        Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
+        Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
         // Example: future admin routes
         // Route::apiResource('/users', AdminUserController::class);
