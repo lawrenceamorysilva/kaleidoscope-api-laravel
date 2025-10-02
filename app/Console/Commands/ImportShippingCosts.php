@@ -132,7 +132,7 @@
              Log::info("Imported {$courier} shipping costs: {$rowCount} rows processed, {$inserted} inserted, {$updated} updated, {$skipped} skipped");
 
              // 🔥 Clear cached shipping cost entries
-             Cache::flush();
+             /*Cache::flush();*/
 
              $this->info("✅ Shipping cost cache cleared after import.");
              Log::info("✅ Shipping cost cache cleared after importing {$courier} data.");
