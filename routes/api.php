@@ -85,6 +85,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout']);
 
         Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
+        Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
         Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
         // Example: future admin routes

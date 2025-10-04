@@ -321,6 +321,46 @@ class DropshipOrderController extends Controller
 
 
     //ADMIN PORTAL STUFF BELOW:::
+    public function adminExportHistory(Request $request): JsonResponse
+    {
+        $orders = \App\Models\DropshipOrderFilename::with([
+            'adminUser:id,name,email',
+            'orders.items',
+            'orders.user:id,username',
+        ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($batch) {
+                return [
+                    'id'           => $batch->id,
+                    'filename'     => $batch->filename,
+                    'exported_at'  => $batch->created_at,
+                    'download_url' => url("/storage/exports/{$batch->filename}"),
+                    'exported_by'  => optional($batch->adminUser)->name,
+                    'exported_by_email' => optional($batch->adminUser)->email,
+                    'orders'       => $batch->orders->map(function ($order) {
+                        return [
+                            'id'            => $order->id,
+                            'username'      => optional($order->user)->username,
+                            'po_number'     => $order->po_number,
+                            'status'        => $order->status,
+                            'grand_total'   => $order->grand_total,
+                            'shipping_total'=> $order->shipping_total,
+                            'created_at'    => $order->created_at,
+                            'items'         => $order->items->map(fn ($item) => [
+                                'sku'   => $item->sku,
+                                'name'  => $item->name,
+                                'qty'   => $item->qty,
+                                'price' => $item->price,
+                            ])->values(),
+                        ];
+                    })->values(),
+                ];
+            })->values();
+
+        return response()->json(['data' => $orders]);
+    }
+
 
     public function adminIndex(Request $request): JsonResponse
     {

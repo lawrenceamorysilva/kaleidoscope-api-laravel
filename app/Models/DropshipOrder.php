@@ -48,6 +48,12 @@ class DropshipOrder extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function filename()
+    {
+        return $this->belongsTo(DropshipOrderFilename::class, 'dropship_order_filename_id');
+    }
+
+
 
 }
 
