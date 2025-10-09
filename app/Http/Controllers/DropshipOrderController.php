@@ -364,46 +364,36 @@ class DropshipOrderController extends Controller
 
     public function adminIndex(Request $request): JsonResponse
     {
-        $orders = DropshipOrder::with(['items', 'user:id,username'])
-            ->where('status', 'for_shipping')
-            ->whereNull('dropship_order_filename_id')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'id'                   => $order->id,
-                    'username'             => optional($order->user)->username,
-                    'po_number'            => $order->po_number,
-                    'delivery_instructions'=> $order->delivery_instructions,
-                    'authority_to_leave'   => $order->authority_to_leave,
-                    'first_name'           => $order->first_name,
-                    'last_name'            => $order->last_name,
-                    'business_name'        => $order->business_name,
-                    'shipping_line1'       => $order->shipping_address_line1,
-                    'shipping_line2'       => $order->shipping_address_line2,
-                    'suburb'               => $order->suburb,
-                    'state'                => $order->state,
-                    'postcode'             => $order->postcode,
-                    'phone'                => $order->phone,
-                    'product_total'        => $order->product_total,
-                    'dropship_fee'         => $order->dropship_fee,
-                    'min_order_fee'        => $order->min_order_fee,
-                    'shipping_total'       => $order->shipping_total,
-                    'grand_total'          => $order->grand_total,
-                    'selected_courier'     => $order->selected_courier,
-                    'items' => $order->items->map(function ($item) {
-                        return [
-                            'sku'   => $item->sku,
-                            'name'  => $item->name,
-                            'qty'   => $item->qty,
-                            'price' => $item->price,
-                        ];
-                    })->values(),
-                ];
-            })->values();
+        $cacheKey = 'admin_export_orders';
+
+        $orders = cache()->remember($cacheKey, now()->addSeconds(20), function () {
+            return DropshipOrder::select([
+                'id', 'user_id', 'po_number', 'delivery_instructions', 'authority_to_leave',
+                'first_name', 'last_name', 'business_name', 'shipping_address_line1',
+                'shipping_address_line2', 'suburb', 'state', 'postcode', 'phone',
+                'product_total', 'dropship_fee', 'min_order_fee', 'shipping_total',
+                'grand_total', 'selected_courier', 'created_at'
+            ])
+                ->with([
+                    'items:id,dropship_order_id,sku,name,qty,price',
+                    'user:id,username'
+                ])
+                ->where('status', 'for_shipping')
+                ->whereNull('dropship_order_filename_id')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function ($order) {
+                    $data = $order->toArray();
+                    $data['username'] = optional($order->user)->username;
+                    unset($data['user']);
+                    return $data;
+                })
+                ->values();
+        });
 
         return response()->json(['orders' => $orders]);
     }
+
 
 
     public function exportCsv(Request $request)
