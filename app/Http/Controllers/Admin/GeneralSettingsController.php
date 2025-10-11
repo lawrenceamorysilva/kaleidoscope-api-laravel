@@ -48,29 +48,33 @@ class GeneralSettingsController extends Controller
         // 🔹 Fetch all settings including type
         $rawSettings = DB::table('portal_settings')->select('key', 'value', 'type')->get();
 
-        // 🔹 Convert settings to proper types
+        // 🔹 Convert settings to proper types AND include type info
         $settings = [];
         foreach ($rawSettings as $row) {
             switch ($row->type) {
                 case 'number':
-                    $settings[$row->key] = is_numeric($row->value)
-                        ? (float) $row->value
-                        : null;
+                    $value = is_numeric($row->value) ? (float) $row->value : null;
                     break;
 
                 case 'boolean':
-                    $settings[$row->key] = filter_var($row->value, FILTER_VALIDATE_BOOLEAN);
+                    $value = filter_var($row->value, FILTER_VALIDATE_BOOLEAN);
                     break;
 
                 case 'json':
                     $decoded = json_decode($row->value, true);
-                    $settings[$row->key] = json_last_error() === JSON_ERROR_NONE ? $decoded : $row->value;
+                    $value = json_last_error() === JSON_ERROR_NONE ? $decoded : $row->value;
                     break;
 
                 default:
-                    $settings[$row->key] = $row->value;
+                    $value = $row->value;
                     break;
             }
+
+            // Include both value and type for frontend dynamic validation
+            $settings[$row->key] = [
+                'value' => $value,
+                'type'  => $row->type,
+            ];
         }
 
         // 🔹 Fetch portal_contents (cached)
@@ -98,6 +102,7 @@ class GeneralSettingsController extends Controller
             'faq'      => $faq,
         ]);
     }
+
 
     /**
      * Save all general settings, terms, and FAQ in one shot
