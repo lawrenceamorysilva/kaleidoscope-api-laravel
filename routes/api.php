@@ -76,22 +76,25 @@ Route::middleware('auth:sanctum')->group(function () {
 // Admin Portal routes
 // ----------------------
 Route::prefix('admin')->group(function () {
-    // Login (no auth yet)
     Route::post('/login', [AdminAuthController::class, 'login']);
 
-    // Protected routes (auth:admin guard)
     Route::middleware('auth:admin')->group(function () {
         Route::get('/me', [AdminAuthController::class, 'me']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);
 
+        // Dropship routes...
         Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
         Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
         Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
-        // Example: future admin routes
-        // Route::apiResource('/users', AdminUserController::class);
-        // Route::apiResource('/orders', OrderController::class);
-        // Route::apiResource('/faq', FaqController::class);
-        // Route::apiResource('/terms', TermsController::class);
+        // ----------------------
+        // General Settings routes
+        // ----------------------
+        Route::get('/general-settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'index']);
+        Route::post('/general-settings/save-all', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'saveAll']);
+        Route::put('/general-settings/settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateSettings']);
+        Route::get('/general-settings/content/{key}', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'showContent']);
+        Route::put('/general-settings/content/{key}', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateContent']);
     });
 });
+
