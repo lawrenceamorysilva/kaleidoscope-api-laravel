@@ -53,19 +53,25 @@ class DropshipOrderController extends Controller
 
     public function show($id)
     {
-        $order = DropshipOrder::with('items')->find($id);
+        $userId = Auth::id();
+
+        $order = DropshipOrder::with('items')
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
 
         if (!$order) {
             return response()->json([
-                'message' => 'Order not found',
-                'id' => $id
+                'message' => 'Order not found.',
+                'id' => $id,
             ], 404);
         }
 
         return response()->json([
-            'order' => $order
+            'order' => $order,
         ]);
     }
+
 
 
     public function store(Request $request)
