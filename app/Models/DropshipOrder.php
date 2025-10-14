@@ -30,13 +30,27 @@ class DropshipOrder extends Model
         'grand_total',
         'selected_courier',
         'available_shipping_options',
-        'status'
+        'status',
     ];
 
     protected $casts = [
+        // JSON arrays
         'available_shipping_options' => 'array',
-    ];
 
+        // Boolean / flags
+        'authority_to_leave' => 'boolean',
+
+        // Integers
+        'user_id' => 'integer',
+        'dropship_order_filename_id' => 'integer',
+
+        // Decimals (Laravel auto-casts string decimals as string unless defined)
+        'product_total' => 'decimal:2',
+        'shipping_total' => 'decimal:2',
+        'dropship_fee' => 'decimal:2',
+        'min_order_fee' => 'decimal:2',
+        'grand_total' => 'decimal:2',
+    ];
 
     public function items()
     {
@@ -52,8 +66,4 @@ class DropshipOrder extends Model
     {
         return $this->belongsTo(DropshipOrderFilename::class, 'dropship_order_filename_id');
     }
-
-
-
 }
-

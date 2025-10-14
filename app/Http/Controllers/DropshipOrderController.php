@@ -449,8 +449,8 @@ class DropshipOrderController extends Controller
 
 
             // Shipping Addresses
-            $shipAddress1 = $do['shipping_line1'] ?? '';
-            $shipAddress2 = $do['shipping_line2'] ?? '';
+            $shipAddress1 = $do['shipping_address_line1'] ?? '';
+            $shipAddress2 = $do['shipping_address_line2'] ?? '';
 
             foreach ($do['items'] as $doi) {
                 fputcsv($file, [
