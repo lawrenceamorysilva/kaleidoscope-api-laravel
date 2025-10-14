@@ -48,9 +48,6 @@ class DropshipOrderController extends Controller
     }
 
 
-
-
-
     public function show($id)
     {
         $userId = Auth::id();
@@ -157,9 +154,13 @@ class DropshipOrderController extends Controller
     /* used to simply update status OR to literally update every part of the dropship order*/
     public function update(Request $request, $id)
     {
-        $order = DropshipOrder::findOrFail($id);
+        $userId = Auth::id();
 
-        // ✅ Case 1: Status-only update (remove/cancel/etc.)
+        $order = DropshipOrder::where('id', $id)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        // ✅ Case 1: Status-only update
         if ($request->has('status') && count($request->all()) === 1) {
             $validated = $request->validate([
                 'status' => 'required|string|in:open,for_shipping,fulfilled,canceled,removed',
@@ -168,7 +169,8 @@ class DropshipOrderController extends Controller
             $order->update(['status' => $validated['status']]);
 
             return response()->json([
-                'message' => "Order status updated to {$validated['status']}"
+                'message' => "Order status updated to {$validated['status']}",
+                'order_id' => $order->id,
             ]);
         }
 
@@ -226,7 +228,7 @@ class DropshipOrderController extends Controller
                 'status' => $validated['status'] ?? $order->status,
             ]);
 
-            // ✅ Replace items safely
+            // Replace items safely
             $order->items()->delete();
             foreach ($validated['items'] as $item) {
                 $order->items()->create([
@@ -238,7 +240,10 @@ class DropshipOrderController extends Controller
             }
 
             DB::commit();
-            return response()->json(['message' => 'Dropship order updated successfully']);
+            return response()->json([
+                'message' => 'Dropship order updated successfully',
+                'order_id' => $order->id,
+            ]);
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('❌ Failed to update dropship order: ' . $e->getMessage());
@@ -249,8 +254,11 @@ class DropshipOrderController extends Controller
 
 
 
+
     public function bulkUpdateStatus(Request $request)
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
             'order_ids'   => 'required|array|min:1',
             'order_ids.*' => 'integer|exists:dropship_orders,id',
@@ -259,13 +267,22 @@ class DropshipOrderController extends Controller
 
         DB::beginTransaction();
         try {
-            DropshipOrder::whereIn('id', $validated['order_ids'])
+            // Only update the orders belonging to this user
+            $updatedCount = DropshipOrder::whereIn('id', $validated['order_ids'])
+                ->where('user_id', $userId)
                 ->update(['status' => $validated['status']]);
 
             DB::commit();
+
+            if ($updatedCount === 0) {
+                return response()->json([
+                    'message' => 'No orders updated (none belonged to you)',
+                ], 403);
+            }
+
             return response()->json([
                 'message' => 'Orders updated successfully',
-                'updated' => $validated['order_ids'],
+                'updated' => $updatedCount,
                 'status'  => $validated['status'],
             ]);
 
@@ -275,6 +292,7 @@ class DropshipOrderController extends Controller
             return response()->json(['message' => 'Failed to update orders'], 500);
         }
     }
+
 
 
     public function history(Request $request): JsonResponse
