@@ -40,11 +40,10 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            \Fruitcake\Cors\HandleCors::class,
+            \Fruitcake\Cors\HandleCors::class, // ✅ Add this
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
-
     ];
 
     /**

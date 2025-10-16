@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             PortalDefaultsSeeder::class,
             TermsSeeder::class,
             FaqSeeder::class,
+            AdminUserSeeder::class,
         ]);
     }
 }

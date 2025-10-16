@@ -78,7 +78,6 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']);
 
-    // Protect everything else with sanctum
     Route::middleware('auth:admin')->group(function () {
         Route::get('/me', [AdminAuthController::class, 'me']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);
@@ -88,7 +87,9 @@ Route::prefix('admin')->group(function () {
         Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
         Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
+        // ----------------------
         // General Settings routes
+        // ----------------------
         Route::get('/general-settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'index']);
         Route::post('/general-settings/save-all', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'saveAll']);
         Route::put('/general-settings/settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateSettings']);
