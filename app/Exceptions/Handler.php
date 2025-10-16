@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Auth\AuthenticationException;
 
 class Handler extends ExceptionHandler
 {
@@ -33,5 +34,14 @@ class Handler extends ExceptionHandler
     public function register()
     {
         //
+    }
+
+    /**
+     * Handle unauthenticated API responses
+     */
+    protected function unauthenticated($request, AuthenticationException $exception)
+    {
+        // Always return JSON for API requests
+        return response()->json(['message' => 'Unauthenticated.'], 401);
     }
 }
