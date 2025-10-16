@@ -79,7 +79,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']);
 
     // Protect everything else with sanctum
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth:admin')->group(function () {
         Route::get('/me', [AdminAuthController::class, 'me']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);
 
