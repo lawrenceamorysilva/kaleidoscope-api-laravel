@@ -7,6 +7,8 @@ return [
         'auth/*',
         'fallback_login',
         'sanctum/csrf-cookie', // ✅ important for stateful + Sanctum
+        'login',
+        'logout'
     ],
 
     'allowed_methods' => ['*'], // ✅ allow all HTTP methods
