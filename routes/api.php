@@ -17,17 +17,15 @@ use App\Http\Controllers\Admin\AdminAuthController;
 // Retailer Portal | Admin Portal routes
 // ----------------------
 Route::middleware('api')->group(function () {
-    //shared
+    // Shared routes
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
 
-    //retailer portal
+    // Retailer portal
     Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
     Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
     Route::post('/fallback_login', [FallbackLoginController::class, 'login']);
-
 });
-
 
 // Debug login (optional)
 Route::post('/debug-fallback-login', function (Request $request) {
@@ -44,7 +42,7 @@ Route::post('/debug-fallback-login', function (Request $request) {
     ]);
 });
 
-// Retailer login & auth
+// Retailer login & auth (token-based)
 Route::post('/login', function (Request $request) {
     $credentials = $request->only('email', 'password');
 
@@ -58,12 +56,12 @@ Route::post('/login', function (Request $request) {
     return response()->json(['token' => $token]);
 });
 
-Route::middleware('auth:sanctum')->get('/auth/me', function (Request $request) {
-    return response()->json($request->user());
-});
-
-// Retailer dropship orders
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/me', function (Request $request) {
+        return response()->json($request->user());
+    });
+
+    // Retailer dropship orders
     Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
     Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
     Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
@@ -73,23 +71,23 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ----------------------
-// Admin Portal routes
+// Admin Portal routes (session-based)
 // ----------------------
 Route::prefix('admin')->group(function () {
+    // Admin login (session-based)
     Route::post('/login', [AdminAuthController::class, 'login']);
 
+    // Protected admin routes
     Route::middleware('auth:admin')->group(function () {
-        //Route::get('/me', [AdminAuthController::class, 'me']);
+        Route::get('/me', [AdminAuthController::class, 'me']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);
 
-        // Dropship routes...
+        // Dropship routes
         Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
         Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
         Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
-        // ----------------------
         // General Settings routes
-        // ----------------------
         Route::get('/general-settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'index']);
         Route::post('/general-settings/save-all', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'saveAll']);
         Route::put('/general-settings/settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateSettings']);
@@ -97,7 +95,3 @@ Route::prefix('admin')->group(function () {
         Route::put('/general-settings/content/{key}', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateContent']);
     });
 });
-
-Route::middleware('auth:api')->get('/me', [AdminAuthController::class, 'me']);
-
-
