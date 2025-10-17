@@ -18,6 +18,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        'http://admin.localhost:4201/',
+        'http://retailer.localhost:4200/',
         'https://staging-admin.kaleidoscope.com.au',
         'https://staging-retailer.kaleidoscope.com.au',
     ],
