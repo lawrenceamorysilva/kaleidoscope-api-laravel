@@ -79,7 +79,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']);
 
     Route::middleware('auth:admin')->group(function () {
-        Route::get('/me', [AdminAuthController::class, 'me']);
+        //Route::get('/me', [AdminAuthController::class, 'me']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);
 
         // Dropship routes...
@@ -97,4 +97,7 @@ Route::prefix('admin')->group(function () {
         Route::put('/general-settings/content/{key}', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateContent']);
     });
 });
+
+Route::middleware('auth:api')->get('/me', [AdminAuthController::class, 'me']);
+
 
