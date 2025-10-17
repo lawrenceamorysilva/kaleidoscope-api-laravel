@@ -4,6 +4,8 @@ return [
 
     'paths' => ['api/*', 'auth/*', 'fallback_login'],
 
+    'allowed_methods' => ['*'],
+
     'allowed_origins' => [
         //local
         'http://api.localhost:8000',
