@@ -1,67 +1,62 @@
 <?php
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-// Retailer controllers
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\NetoProductController;
-use App\Http\Controllers\Auth\FallbackLoginController;
+use App\Http\Controllers\Auth\JWTLoginController;
 use App\Http\Controllers\DropshipOrderController;
+use App\Http\Controllers\Admin\AdminJWTLoginController;
+use App\Http\Controllers\Admin\GeneralSettingsController;
 
-// Admin controllers
-use App\Http\Controllers\Admin\AdminAuthController;
+/*
+|--------------------------------------------------------------------------
+| API Routes (JWT / Bearer Token auth)
+|--------------------------------------------------------------------------
+|
+| All API routes now use token-based auth.
+| Angular frontends must send `Authorization: Bearer <token>` in headers.
+|
+*/
 
 // ----------------------
-// Retailer Portal | Admin Portal routes
+// Public / Shared Routes
 // ----------------------
-Route::middleware('api')->group(function () {
-    // Shared routes
-    Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
-    Route::get('/neto-products', [NetoProductController::class, 'index']);
 
-    // Retailer portal
-    Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
-    Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
-    Route::post('/fallback_login', [FallbackLoginController::class, 'login']);
-});
+Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
+Route::get('/neto-products', [NetoProductController::class, 'index']);
+Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
+Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
 
-// Debug login (optional)
-Route::post('/debug-fallback-login', function (Request $request) {
-    \Log::info('iPad Debug Login Attempt', [
-        'raw_input' => $request->all(),
-        'raw_email' => $request->input('email'),
-        'normalized_email' => strtolower(trim($request->input('email')))
+
+// ----------------------
+// Optional Debug Route
+// ----------------------
+Route::post('/debug-login', function (Request $request) {
+    \Log::info('Debug Login Attempt', [
+        'input' => $request->all(),
+        'normalized_email' => strtolower(trim($request->input('email'))),
     ]);
 
     return response()->json([
         'received_email' => $request->input('email'),
         'normalized_email' => strtolower(trim($request->input('email'))),
-        'all_inputs' => $request->all()
+        'all_inputs' => $request->all(),
     ]);
 });
 
-// Retailer login & auth (token-based)
-Route::post('/login', function (Request $request) {
-    $credentials = $request->only('email', 'password');
+// ----------------------
+// Retailer Authentication
+// ----------------------
+Route::post('/login', [JWTLoginController::class, 'login']);
+Route::post('/logout', [JWTLoginController::class, 'logout']);
 
-    if (!Auth::attempt($credentials)) {
-        return response()->json(['message' => 'Unauthorized'], 401);
-    }
+// ----------------------
+// Retailer Protected Routes
+// ----------------------
+Route::middleware(['auth:api'])->group(function () {
+    Route::get('/auth/me', [JWTLoginController::class, 'me']);
 
-    $user = Auth::user();
-    $token = $user->createToken('retailer')->plainTextToken;
-
-    return response()->json(['token' => $token]);
-});
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/auth/me', function (Request $request) {
-        return response()->json($request->user());
-    });
-
-    // Retailer dropship orders
     Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
     Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
     Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
@@ -71,27 +66,23 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ----------------------
-// Admin Portal routes (session-based)
+// Admin Authentication
 // ----------------------
 Route::prefix('admin')->group(function () {
-    // Admin login (session-based)
-    Route::post('/login', [AdminAuthController::class, 'login']);
+    Route::post('/login', [AdminJWTLoginController::class, 'login']);
+    Route::post('/logout', [AdminJWTLoginController::class, 'logout']);
 
-    // Protected admin routes
-    Route::middleware('auth:admin')->group(function () {
-        Route::get('/me', [AdminAuthController::class, 'me']);
-        Route::post('/logout', [AdminAuthController::class, 'logout']);
+    Route::middleware(['auth:admin'])->group(function () {
+        Route::get('/me', [AdminJWTLoginController::class, 'me']);
 
-        // Dropship routes
         Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
         Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
         Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
-        // General Settings routes
-        Route::get('/general-settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'index']);
-        Route::post('/general-settings/save-all', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'saveAll']);
-        Route::put('/general-settings/settings', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateSettings']);
-        Route::get('/general-settings/content/{key}', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'showContent']);
-        Route::put('/general-settings/content/{key}', [\App\Http\Controllers\Admin\GeneralSettingsController::class, 'updateContent']);
+        Route::get('/general-settings', [GeneralSettingsController::class, 'index']);
+        Route::post('/general-settings/save-all', [GeneralSettingsController::class, 'saveAll']);
+        Route::put('/general-settings/settings', [GeneralSettingsController::class, 'updateSettings']);
+        Route::get('/general-settings/content/{key}', [GeneralSettingsController::class, 'showContent']);
+        Route::put('/general-settings/content/{key}', [GeneralSettingsController::class, 'updateContent']);
     });
 });

@@ -32,17 +32,19 @@ return [
             'provider' => 'users',
         ],
 
-        'admin' => [
-            'driver' => 'session', // ✅ use session for admin portal
-            'provider' => 'admin_users',
-        ],
-
         'api' => [
-            'driver' => 'token',
+            'driver' => 'jwt',
             'provider' => 'users',
             'hash' => false,
         ],
+
+        'admin' => [
+            'driver' => 'jwt',
+            'provider' => 'admin_users',
+            'hash' => false,
+        ],
     ],
+
 
     /*
     |--------------------------------------------------------------------------

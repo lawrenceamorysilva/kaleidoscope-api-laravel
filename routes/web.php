@@ -8,17 +8,15 @@ use App\Http\Controllers\Auth\SSOLoginController;
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| Only needed for SSO login or serving basic pages.
+| All API calls now use JWT; no CSRF cookie required.
 |
 */
 
+// Landing page (optional)
 Route::get('/', function () {
     return view('welcome');
 });
 
+// SSO login
 Route::get('/auth/sso_login', [SSOLoginController::class, 'handleSSO']);
-
-
-Route::post('/auth/fallback_login', [\App\Http\Controllers\Auth\FallbackLoginController::class, 'login']);

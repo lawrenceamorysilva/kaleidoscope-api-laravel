@@ -3,14 +3,22 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class AdminUser extends Authenticatable
+class AdminUser extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens;
-
-    protected $table = 'admin_users'; // or whatever your table is
+    protected $table = 'admin_users';
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active'];
     protected $hidden = ['password', 'remember_token'];
-}
 
+    // JWT methods
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+}

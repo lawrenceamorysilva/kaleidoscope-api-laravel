@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\DropshipOrder;
 use App\Models\DropshipOrderItem;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class DropshipOrderController extends Controller
 {
@@ -16,7 +17,8 @@ class DropshipOrderController extends Controller
     {
         $userId = Auth::id();
 
-        $orders = DropshipOrder::where('user_id', $userId)
+        // Build the query
+        $query = DropshipOrder::where('user_id', $userId)
             ->where('status', 'open')
             ->select(
                 'id',
@@ -28,24 +30,29 @@ class DropshipOrderController extends Controller
                 'shipping_total',
                 'grand_total'
             )
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'id'            => $order->id,
-                    'name'          => $order->first_name . ' ' . $order->last_name,
-                    'product_total' => $order->product_total,
-                    'dropship_fee'  => $order->dropship_fee,
-                    'min_order_fee' => $order->min_order_fee,
-                    'shipping_total'=> $order->shipping_total,
-                    'grand_total'   => $order->grand_total,
-                ];
-            });
+            ->orderBy('created_at', 'desc');
+
+        // Log the SQL with bindings
+        \Log::info('KIWI openSummary query: ' . $query->toSql(), $query->getBindings());
+
+        // Execute and transform
+        $orders = $query->get()->map(function ($order) {
+            return [
+                'id'            => $order->id,
+                'name'          => $order->first_name . ' ' . $order->last_name,
+                'product_total' => $order->product_total,
+                'dropship_fee'  => $order->dropship_fee,
+                'min_order_fee' => $order->min_order_fee,
+                'shipping_total'=> $order->shipping_total,
+                'grand_total'   => $order->grand_total,
+            ];
+        });
 
         return response()->json([
             'orders' => $orders
         ]);
     }
+
 
 
     public function show($id)
@@ -386,8 +393,22 @@ class DropshipOrderController extends Controller
     }
 
 
+
     public function adminIndex(Request $request): JsonResponse
     {
+
+        // Log the Authorization header
+        /*\Log::info('KIWI AdminIndex called', [
+            'authorization' => $request->header('Authorization'),
+            'token' => $request->bearerToken(),
+            'guard_user' => auth('admin')->user(),
+        ]);
+
+        if (!auth('admin')->check()) {
+            return response()->json(['error' => 'Unauthenticated admin!'], 401);
+        }*/
+
+
         $cacheKey = 'admin_export_orders';
 
         $orders = cache()->remember($cacheKey, now()->addSeconds(20), function () {

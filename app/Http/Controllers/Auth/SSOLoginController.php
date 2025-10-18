@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
 
 class SSOLoginController extends Controller
 {
@@ -19,78 +21,95 @@ class SSOLoginController extends Controller
         $this->neto = $neto;
     }
 
+    /**
+     * Handle SSO login from link
+     */
     public function handleSSO(Request $request)
     {
         $username = $request->query('username');
         $email = $request->query('email');
         $signature = $request->query('signature');
 
-        // Optional security: Validate HMAC signature
-        $expectedSignature = hash_hmac('sha256', "{$username}|{$email}", env('SSO_SECRET_KEY'));
-        if ($signature && !hash_equals($signature, $expectedSignature)) {
-            abort(403, 'Invalid signature');
+        \Log::info('SSO handleSSO called', compact('username', 'email', 'signature'));
+
+        // Determine frontend base URL
+        $baseUrl = match (config('app.env')) {
+            'local' => 'http://retailer.localhost:4200',
+            'staging' => 'https://staging-retailer.kaleidoscope.com.au',
+            default => 'https://retailer.kaleidoscope.com.au',
+        };
+
+        // Validate optional HMAC signature
+        if ($signature) {
+            $expectedSignature = hash_hmac('sha256', "{$username}|{$email}", env('SSO_SECRET_KEY'));
+            if (!hash_equals($signature, $expectedSignature)) {
+                \Log::warning('SSO invalid signature', compact('username', 'email'));
+                $errorMessage = urlencode('Invalid SSO signature');
+                return redirect()->to("{$baseUrl}/login?error={$errorMessage}");
+            }
         }
 
-        // Fetch from Neto (always fetch to sync latest info)
+        // Fetch latest customer data from Neto
         $customer = $this->neto->getCustomerByEmail($email);
+        \Log::info('Neto Customer API response', ['request_email' => $email, 'response_body' => json_encode($customer)]);
 
         if (!$customer) {
-            return response()->json(['error' => 'Neto customer not found'], 404);
+            \Log::warning('Neto customer not found', compact('email', 'username'));
+            $errorMessage = urlencode('Customer not found in Neto');
+            return redirect()->to("{$baseUrl}/login?error={$errorMessage}");
         }
 
-        // Merge update/create fields
+        $customer = $customer['Customer'][0] ?? null;
+        \Log::info('Neto customer fetched', compact('customer'));
+
+        // Prepare user data
         $data = [
             'name' => $customer['Username'] ?? $username,
             'customer_id' => $customer['ID'] ?? null,
             'username' => $customer['Username'] ?? null,
-            'on_credit_hold' => $customer['OnCreditHold'] === 'True',
+            'on_credit_hold' => ($customer['OnCreditHold'] ?? 'False') === 'True',
             'default_invoice_terms' => $customer['DefaultInvoiceTerms'] ?? null,
             'bill_company' => $customer['BillingAddress']['BillCompany'] ?? null,
         ];
 
+        // Create or update the user
         $user = User::updateOrCreate(
             ['email' => $email],
             array_merge($data, [
-                'password' => Hash::make(Str::random(16)) // only used if new
+                'password' => Hash::make(Str::random(16)), // only for new user
             ])
         );
+        \Log::info('User created or updated', ['user_id' => $user->id]);
 
+        // Generate JWT token
+        $token = JWTAuth::fromUser($user);
+        \Log::info('JWT token generated', ['token' => $token]);
+
+        // Log the user in for session (optional)
         Auth::login($user, true);
-        $token = $user->createToken('retailer')->plainTextToken;
 
-        $env = config('app.env');
-
-        switch ($env) {
-            case 'local':
-                $baseUrl = 'http://retailer.localhost:4200';
-                break;
-            case 'staging':
-                $baseUrl = 'https://staging-retailer.kaleidoscope.com.au';
-                break;
-            default:
-                $baseUrl = 'https://retailer.kaleidoscope.com.au';
-                break;
-        }
-
-
-        return redirect()->to("{$baseUrl}/auth/callback?token={$token}");
+        // Redirect to frontend home page with token
+        \Log::info('Redirecting to frontend', ['url' => "{$baseUrl}/?token={$token}"]);
+        return redirect()->to("{$baseUrl}/?token={$token}");
     }
 
-
+    /**
+     * Fallback login for just email
+     */
     public function fallbackLogin(Request $request)
     {
         $email = $request->input('email');
 
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            $user = User::create([
+        $user = User::firstOrCreate(
+            ['email' => $email],
+            [
                 'name' => 'Retailer',
-                'email' => $email,
-                'password' => Hash::make(str()->random(16)),
-            ]);
-        }
+                'password' => Hash::make(Str::random(16)),
+            ]
+        );
 
-        $token = $user->createToken('retailer')->plainTextToken;
+        $token = JWTAuth::fromUser($user);
+
         return response()->json(['token' => $token]);
     }
 }
