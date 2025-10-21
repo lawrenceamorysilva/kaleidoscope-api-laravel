@@ -107,11 +107,44 @@ class DropshipOrderController extends Controller
             'items.*.name' => 'required|string',
         ]);
 
+        $userId = auth()->id();
+
+        // 🔍 Check for duplicate orders
+        $existing = \App\Models\DropshipOrder::with('items')
+            ->where('user_id', $userId)
+            ->where('status', 'open')
+            ->where('grand_total', $validated['grand_total'])
+            ->get()
+            ->filter(function ($order) use ($validated) {
+                $currentItems = collect($validated['items'])->map(fn($i) => [
+                    'sku' => strtolower($i['sku']),
+                    'qty' => (int) $i['qty'],
+                ])->sortBy('sku')->values()->all();
+
+                $orderItems = $order->items->map(fn($i) => [
+                    'sku' => strtolower($i->sku),
+                    'qty' => (int) $i->qty,
+                ])->sortBy('sku')->values()->all();
+
+                return $currentItems === $orderItems;
+            })
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'code' => 'DUPLICATE_ORDER',
+                'message' => 'You’ve already placed this same order before.',
+                'order_id' => $existing->id,
+                'status' => $existing->status,
+            ], 409); // HTTP 409 Conflict
+        }
+
+        // --- Continue with your existing logic ---
         DB::beginTransaction();
 
         try {
             $order = DropshipOrder::create([
-                'user_id' => auth()->id(),
+                'user_id' => $userId,
                 'po_number' => $validated['po_number'],
                 'delivery_instructions' => $validated['delivery_instructions'],
                 'first_name' => $validated['first_name'],
@@ -138,7 +171,7 @@ class DropshipOrderController extends Controller
                     'sku' => $item['sku'],
                     'qty' => $item['qty'],
                     'price' => $item['price'],
-                    'name' => $item['name'] ?? null
+                    'name' => $item['name'] ?? null,
                 ]);
             }
 
@@ -146,16 +179,17 @@ class DropshipOrderController extends Controller
 
             return response()->json([
                 'message' => 'Dropship order saved successfully',
-                'order_id' => $order->id
+                'order_id' => $order->id,
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('❌ Failed to save dropship order: ' . $e->getMessage());
             return response()->json([
-                'message' => 'Failed to save dropship order'
+                'message' => 'Failed to save dropship order',
             ], 500);
         }
     }
+
 
 
     /* used to simply update status OR to literally update every part of the dropship order*/
