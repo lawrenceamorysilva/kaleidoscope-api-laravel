@@ -32,13 +32,14 @@ class ShippingController extends Controller
         $cacheKey = "shipping_costs:" . strtolower($suburb) . ":$postcode:$weight";
 
         $data = Cache::remember($cacheKey, now()->addHours(2), function () use ($postcode, $suburb, $weight) {
-            // Validation: Confirm suburb/postcode combo exists
-            $validPair = DB::table('shipping_costs')
+            // 🔍 First, validate suburb + postcode combo and also fetch its state
+            $location = DB::table('shipping_costs')
                 ->where('postcode', $postcode)
                 ->whereRaw('UPPER(suburb) = ?', [$suburb])
-                ->exists();
+                ->select('state')
+                ->first();
 
-            if (!$validPair) {
+            if (!$location) {
                 abort(response()->json([
                     'error' => 'Invalid suburb/postcode combination.',
                 ], 422));
@@ -68,10 +69,11 @@ class ShippingController extends Controller
                 ], 404));
             }
 
-
+            // ✅ Include state in the returned data
             return [
                 'postcode' => $postcode,
                 'suburb' => $suburb,
+                'state' => $location->state ?? null,
                 'weight' => $weight,
                 'options' => $costs,
                 'default' => $costs[0],
@@ -80,6 +82,7 @@ class ShippingController extends Controller
 
         return response()->json($data);
     }
+
 
 
 }
