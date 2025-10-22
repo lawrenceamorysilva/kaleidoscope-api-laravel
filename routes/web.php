@@ -34,7 +34,7 @@ Route::middleware(['web'])->group(function () {
         Route::get('/auth/me', [LoginController::class, 'me']);
         Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
         Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
-        Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
+
         Route::get('/dropship-orders/history', [DropshipOrderController::class, 'history']);
         Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
         Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
@@ -47,6 +47,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/auth/sso_login', [SSOLoginController::class, 'handleSSO']);
 
     // --- Retailer-only routes ---
+    Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
+
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
     Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
