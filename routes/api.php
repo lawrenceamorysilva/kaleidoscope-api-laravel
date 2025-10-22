@@ -9,6 +9,22 @@ use App\Http\Controllers\DropshipOrderController;
 use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
 
+
+/*use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Session\Middleware\StartSession;
+
+Route::middleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+])->group(function () {
+    // These now run WITH Laravel sessions enabled
+    Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/logout', [LoginController::class, 'logout']);
+});*/
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes (Session / Guard-based auth)
@@ -22,10 +38,10 @@ use App\Http\Controllers\Admin\GeneralSettingsController;
 // ----------------------
 // Public / Shared Routes
 // ----------------------
-Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
+/*Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
 Route::get('/neto-products', [NetoProductController::class, 'index']);
 Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
-Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
+Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);*/
 
 // ----------------------
 // Optional Debug Route
@@ -46,13 +62,13 @@ Route::post('/debug-login', function (Request $request) {
 // ----------------------
 // Retailer Authentication
 // ----------------------
-Route::post('/login', [LoginController::class, 'login']);
-Route::post('/logout', [LoginController::class, 'logout']);
+/*Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout']);*/
 
 // ----------------------
 // Retailer Protected Routes
 // ----------------------
-Route::middleware(['auth.api'])->group(function () {
+/*Route::middleware(['auth:web'])->group(function () {
     Route::get('/auth/me', [LoginController::class, 'me']);
 
     Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
@@ -61,7 +77,7 @@ Route::middleware(['auth.api'])->group(function () {
     Route::get('/dropship-orders/history', [DropshipOrderController::class, 'history']);
     Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
     Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
-});
+});*/
 
 // ----------------------
 // Admin Authentication
@@ -70,7 +86,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminLoginController::class, 'login']);
     Route::post('/logout', [AdminLoginController::class, 'logout']);
 
-    Route::middleware(['auth.admin'])->group(function () {
+    Route::middleware(['auth:admin'])->group(function () {
         Route::get('/me', [AdminLoginController::class, 'me']);
 
         Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
