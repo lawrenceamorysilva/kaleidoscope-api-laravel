@@ -47,10 +47,11 @@ Route::middleware([
 
 // api.php
 Route::middleware(['auth:web', 'cors'])->group(function () {
-    Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
-    Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
-    Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
+    Route::match(['POST', 'OPTIONS'], '/dropship-orders', [DropshipOrderController::class, 'store']);
+    Route::match(['PUT', 'OPTIONS'], '/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
+    Route::match(['POST', 'OPTIONS'], '/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
 });
+
 
 
 
