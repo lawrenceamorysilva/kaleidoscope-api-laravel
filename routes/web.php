@@ -31,7 +31,7 @@ Route::middleware(['web'])->group(function () {
     Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
 
     // ✅ Session + Auth + CORS applied **before auth** for all POST/PUT
-    Route::middleware(['cors', 'auth:web'])->group(function () {
+    Route::middleware(['cors'])->group(function () {
         Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
         Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
         Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
