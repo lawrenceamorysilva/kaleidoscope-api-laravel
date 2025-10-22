@@ -46,6 +46,9 @@ Route::middleware(['web'])->group(function () {
     // --- SSO login ---
     Route::get('/auth/sso_login', [SSOLoginController::class, 'handleSSO']);
 
+
+    Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
+
     // --- Retailer-only routes ---
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
@@ -54,7 +57,6 @@ Route::middleware(['web'])->group(function () {
 });
 
 Route::middleware(['web', 'auth:web', 'cors'])->group(function () {
-    Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
     Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
     Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
 });
