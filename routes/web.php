@@ -53,6 +53,13 @@ Route::middleware(['web'])->group(function () {
     Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
 });
 
+Route::middleware(['web', 'auth:web', 'cors'])->group(function () {
+    Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
+    Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
+    Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
+});
+
+
 
 
 
