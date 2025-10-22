@@ -32,7 +32,6 @@ Route::middleware(['web'])->group(function () {
     // --- Authenticated user routes ---
     Route::middleware(['auth:web'])->group(function () {
         Route::get('/auth/me', [LoginController::class, 'me']);
-
         Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
         Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
         Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
@@ -42,21 +41,18 @@ Route::middleware(['web'])->group(function () {
     });
 
     // Optional landing page
-    Route::get('/', function () {
-        return view('welcome');
-    });
+    Route::get('/', fn() => view('welcome'));
 
     // --- SSO login ---
     Route::get('/auth/sso_login', [SSOLoginController::class, 'handleSSO']);
 
-    /*// ----------------------
-    // Public / Shared Routes
-    // ----------------------
+    // --- Retailer-only routes ---
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
     Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
-    Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);*/
+    Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
 });
+
 
 
 

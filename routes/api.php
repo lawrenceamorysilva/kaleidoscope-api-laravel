@@ -38,12 +38,12 @@ Route::middleware([
 // ----------------------
 // Public / Shared Routes
 // ----------------------
-Route::middleware(['web'])->group(function () {
+/*Route::middleware(['web'])->group(function () {
     Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
     Route::get('/neto-products', [NetoProductController::class, 'index']);
     Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
     Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
-});
+});*/
 
 
 // ----------------------
