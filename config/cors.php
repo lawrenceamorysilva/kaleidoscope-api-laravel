@@ -13,21 +13,11 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'auth/*'],
+    'paths' => ['api/*', 'login', 'logout', 'auth/me'],
 
     'allowed_methods' => ['*'],
 
     /*'allowed_origins' => [
-        'http://localhost:4200/',
-        'http://admin.localhost:4201/',
-        'http://retailer.localhost:4200/',
-        'https://staging-admin.kaleidoscope.com.au',
-        'https://staging-retailer.kaleidoscope.com.au',
-    ],*/
-
-    /*'allowed_origins' => ['*'],*/
-
-    'allowed_origins' => [
         'http://retailer.localhost:4200',
         'http://admin.localhost:4201',
         'http://localhost:4200',
@@ -35,6 +25,13 @@ return [
         'https://staging-retailer.kaleidoscope.com.au',
         'https://admin.kaleidoscope.com.au',
         'https://retailer.kaleidoscope.com.au',
+    ],*/
+
+    /*'allowed_origins' => ['*'],*/
+
+    'allowed_origins' => [
+        'http://retailer.localhost:4200',
+        'http://admin.localhost:4201',
     ],
 
 

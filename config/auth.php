@@ -33,13 +33,13 @@ return [
         ],
 
         'api' => [
-            'driver' => 'jwt',
+            'driver' => 'session', //jwt before just removed for composer install to go
             'provider' => 'users',
             'hash' => false,
         ],
 
         'admin' => [
-            'driver' => 'jwt',
+            'driver' => 'session', //jwt before just removed for composer install to go
             'provider' => 'admin_users',
             'hash' => false,
         ],

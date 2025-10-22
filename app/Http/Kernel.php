@@ -39,11 +39,15 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            \Fruitcake\Cors\HandleCors::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+
+            // Use session-based authentication instead of JWT
+            \App\Http\Middleware\AuthenticateApiSession::class,
         ],
+
     ];
+
 
     /**
      * The application's route middleware.
@@ -53,8 +57,9 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'jwt.auth' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
-        'auth' => \App\Http\Middleware\Authenticate::class,
+        'auth' => \App\Http\Middleware\Authenticate::class, // for default web guard
+        'auth.api' => \App\Http\Middleware\AuthenticateApiSession::class, // for api routes
+        'auth.admin' => \App\Http\Middleware\AuthenticateAdmin::class, // for admin routes
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,

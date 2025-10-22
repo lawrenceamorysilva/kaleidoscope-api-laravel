@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class AdminUser extends Authenticatable implements JWTSubject
+
+class AdminUser extends Authenticatable
 {
     protected $table = 'admin_users';
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active'];
