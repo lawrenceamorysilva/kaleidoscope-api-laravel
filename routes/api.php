@@ -38,10 +38,10 @@ Route::middleware([
 // ----------------------
 // Public / Shared Routes
 // ----------------------
-/*Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
+Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
 Route::get('/neto-products', [NetoProductController::class, 'index']);
 Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
-Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);*/
+Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
 
 // ----------------------
 // Optional Debug Route
