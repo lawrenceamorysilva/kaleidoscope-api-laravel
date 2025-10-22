@@ -5,6 +5,10 @@ use App\Http\Controllers\Auth\SSOLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DropshipOrderController;
 
+use App\Http\Controllers\ShippingController;
+use App\Http\Controllers\NetoProductController;
+
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,6 +17,16 @@ use App\Http\Controllers\DropshipOrderController;
 | Session-based auth is used; CSRF middleware is active by default.
 |
 */
+
+
+
+// ----------------------
+// Public / Shared Routes
+// ----------------------
+Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
+Route::get('/neto-products', [NetoProductController::class, 'index']);
+Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
+Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
 
 // All web routes (session + CSRF)
 Route::middleware(['web'])->group(function () {
