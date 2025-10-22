@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'login', 'logout', 'auth/me', 'neto-products', 'products/*', 'shipping/cost'],
+    'paths' => ['api/*', 'login', 'logout', 'auth/me', 'neto-products', 'products/*', 'shipping/cost','dropship-orders/*'],
 
     'allowed_methods' => ['*'],
 
