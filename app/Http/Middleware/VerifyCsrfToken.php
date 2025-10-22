@@ -16,6 +16,7 @@ class VerifyCsrfToken extends Middleware
         'logout',
         'auth/*',
         'products/lookup',
+        'dropship-orders/*',
     ];
 
 }
