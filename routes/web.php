@@ -36,6 +36,12 @@ Route::middleware(['web'])->group(function () {
         Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
         Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
     });
+
+    // OPTIONS fallback for preflight requests
+    Route::options('/dropship-orders/{any}', function() {
+        return response()->noContent();
+    })->where('any', '.*')->middleware('cors');
+
 });
 
 // Debug session
