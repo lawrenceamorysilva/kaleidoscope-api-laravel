@@ -152,7 +152,8 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN', null),
+    //'domain' => env('SESSION_DOMAIN', null),
+    'domain' => '.kaleidoscope.com.au',
 
     /*
     |--------------------------------------------------------------------------
@@ -165,7 +166,8 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE',false),
+    //'secure' => env('SESSION_SECURE_COOKIE',false),
+    'secure' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -193,7 +195,8 @@ return [
     |
     */
 
-    'same_site' => env('SESSION_SAMESITE', 'lax'),
+    //'same_site' => env('SESSION_SAMESITE', 'lax'),
+    'same_site' => 'none',
 
 
 ];
