@@ -16,7 +16,7 @@ class VerifyUserToken
     {
         $authHeader = $request->header('Authorization');
 
-        // ✅ Quick staging fallback: check query param if header missing
+        // ✅ Quick fallback: check query param if header missing (staging/live)
         if (!$authHeader) {
             $tokenFromQuery = $request->query('api_token');
             if ($tokenFromQuery) {
@@ -41,9 +41,9 @@ class VerifyUserToken
 
         // ✅ Merge token context (user_id + portal + expiry)
         $request->merge([
-            'user_id' => $result['data']['user_id'],
-            'portal'  => $result['data']['portal'],
-            'token_expiry' => $result['data']['expires_at'],
+            'user_id'     => $result['data']['user_id'],
+            'portal'      => $result['data']['portal'],
+            'token_expiry'=> $result['data']['expires_at'],
         ]);
 
         // ✅ Continue request
