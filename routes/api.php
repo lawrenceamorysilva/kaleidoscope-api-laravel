@@ -1,114 +1,73 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\RetailerAuthController;
+use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\NetoProductController;
-use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DropshipOrderController;
-use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
-
-
-/*use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Session\Middleware\StartSession;
-
-Route::middleware([
-    EncryptCookies::class,
-    AddQueuedCookiesToResponse::class,
-    StartSession::class,
-])->group(function () {
-    // These now run WITH Laravel sessions enabled
-    Route::post('/login', [LoginController::class, 'login']);
-    Route::post('/logout', [LoginController::class, 'logout']);
-});*/
-
 
 /*
 |--------------------------------------------------------------------------
-| API Routes (Session / Guard-based auth)
+| API Routes
 |--------------------------------------------------------------------------
-|
-| All API routes now use session-based auth.
-| Angular frontends must use cookie-based sessions (or call /login first).
-|
+| Unified Hybrid Token Auth (Retailer + Admin)
+| - Public routes for login / SSO
+| - Protected routes use VerifyUserToken middleware
+|--------------------------------------------------------------------------
 */
 
 // ----------------------
-// Public / Shared Routes
+// Public / Auth Routes
 // ----------------------
-/*Route::middleware(['web'])->group(function () {
-    Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
-    Route::get('/neto-products', [NetoProductController::class, 'index']);
-    Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
-    Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
-});*/
-
-// api.php
-/*Route::middleware(['auth:web', 'cors'])->group(function () {
-    Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
-    Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
-    Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
-});*/
+Route::prefix('auth')->group(function () {
+    // Retailer SSO Login
+    Route::post('/sso_login', [RetailerAuthController::class, 'ssoLogin']);
 
 
-
-
-// ----------------------
-// Optional Debug Route
-// ----------------------
-Route::post('/debug-login', function (Request $request) {
-    \Log::info('Debug Login Attempt', [
-        'input' => $request->all(),
-        'normalized_email' => strtolower(trim($request->input('email'))),
-    ]);
-
-    return response()->json([
-        'received_email' => $request->input('email'),
-        'normalized_email' => strtolower(trim($request->input('email'))),
-        'all_inputs' => $request->all(),
-    ]);
+    // Admin Login
+    Route::prefix('admin')->group(function () {
+        Route::post('/login', [AdminAuthController::class, 'login']);
+    });
 });
 
 // ----------------------
-// Retailer Authentication
+// Shared Public Endpoints
 // ----------------------
-/*Route::post('/login', [LoginController::class, 'login']);
-Route::post('/logout', [LoginController::class, 'logout']);*/
+Route::get('/shipping/cost', [ShippingController::class, 'getShippingCost']);
+Route::get('/neto-products', [NetoProductController::class, 'index']);
+Route::post('/products/lookup', [NetoProductController::class, 'lookupSkus']);
+Route::get('/products/sku/{sku}', [NetoProductController::class, 'getBySku']);
 
 // ----------------------
 // Retailer Protected Routes
 // ----------------------
-/*Route::middleware(['auth:web'])->group(function () {
-    Route::get('/auth/me', [LoginController::class, 'me']);
-
+Route::middleware(['verify.user.token'])->prefix('retailer')->group(function () {
     Route::post('/dropship-orders', [DropshipOrderController::class, 'store']);
     Route::put('/dropship-orders/{id}', [DropshipOrderController::class, 'update']);
     Route::get('/dropship-orders/openSummary', [DropshipOrderController::class, 'openSummary']);
     Route::get('/dropship-orders/history', [DropshipOrderController::class, 'history']);
     Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
     Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
-});*/
+});
 
 // ----------------------
-// Admin Authentication
+// Admin Protected Routes
 // ----------------------
-Route::prefix('admin')->group(function () {
-    Route::post('/login', [AdminLoginController::class, 'login']);
-    Route::post('/logout', [AdminLoginController::class, 'logout']);
+Route::middleware(['verify.user.token'])->prefix('admin')->group(function () {
+    Route::get('/me', [AdminAuthController::class, 'me']);
+    Route::post('/logout', [AdminAuthController::class, 'logout']);
 
-    Route::middleware(['auth:admin'])->group(function () {
-        Route::get('/me', [AdminLoginController::class, 'me']);
+    // Dropship Management
+    Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
+    Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
+    Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
 
-        Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
-        Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
-        Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
-
-        Route::get('/general-settings', [GeneralSettingsController::class, 'index']);
-        Route::post('/general-settings/save-all', [GeneralSettingsController::class, 'saveAll']);
-        Route::put('/general-settings/settings', [GeneralSettingsController::class, 'updateSettings']);
-        Route::get('/general-settings/content/{key}', [GeneralSettingsController::class, 'showContent']);
-        Route::put('/general-settings/content/{key}', [GeneralSettingsController::class, 'updateContent']);
-    });
+    // General Settings
+    Route::get('/general-settings', [GeneralSettingsController::class, 'index']);
+    Route::post('/general-settings/save-all', [GeneralSettingsController::class, 'saveAll']);
+    Route::put('/general-settings/settings', [GeneralSettingsController::class, 'updateSettings']);
+    Route::get('/general-settings/content/{key}', [GeneralSettingsController::class, 'showContent']);
+    Route::put('/general-settings/content/{key}', [GeneralSettingsController::class, 'updateContent']);
 });

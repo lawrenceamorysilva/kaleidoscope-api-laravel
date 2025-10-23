@@ -13,21 +13,20 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'login', 'logout', 'auth/me', 'neto-products', 'products/*', 'shipping/cost','dropship-orders/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    /*'allowed_origins' => [
+    'allowed_origins' => [
         'http://retailer.localhost:4200',
         'http://admin.localhost:4201',
-        'http://localhost:4200',
         'https://staging-admin.kaleidoscope.com.au',
         'https://staging-retailer.kaleidoscope.com.au',
         'https://admin.kaleidoscope.com.au',
         'https://retailer.kaleidoscope.com.au',
-    ],*/
+    ],
 
-    'allowed_origins' => ['*'],
+    /*'allowed_origins' => ['*'],*/
 
     /*'allowed_origins' => [
         'http://retailer.localhost:4200',
@@ -44,6 +43,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,  // necessary for session cookies
+    'supports_credentials' => false,
 
 ];

@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\AdminUser;
 use App\Http\Controllers\Controller;
-
-
-use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use App\Models\AdminUser;
+use App\Helpers\TokenHelper;
 
 class AdminAuthController extends Controller
 {
-    /** Login using Sanctum token */
+    /**
+     * Handle Admin login (username + password)
+     * Endpoint: POST /api/admin/login
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -20,31 +21,38 @@ class AdminAuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::guard('admin')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        $email = strtolower(trim($request->input('email')));
+        $password = $request->input('password');
+
+        $admin = AdminUser::where('email', $email)->first();
+
+        if (!$admin || !Hash::check($password, $admin->password)) {
+            return response()->json(['message' => 'Invalid admin credentials'], 401);
         }
 
-        $request->session()->regenerate();
-
-        $user = Auth::guard('admin')->user();
+        // 🧩 Generate token for Admin Portal
+        $token = TokenHelper::generate($admin->id, 'admin');
 
         return response()->json([
-            'user' => $user,
-            'message' => 'Login successful',
+            'token' => $token,
+            'user' => [
+                'id' => $admin->id,
+                'email' => $admin->email,
+                'name' => $admin->name,
+                'role' => $admin->role ?? 'admin',
+            ],
         ]);
     }
 
+    /**
+     * Return token-based admin context
+     */
     public function me(Request $request)
     {
-        return response()->json(Auth::guard('admin')->user());
-    }
-
-    public function logout(Request $request)
-    {
-        Auth::guard('admin')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return response()->json(['message' => 'Logged out']);
+        return response()->json([
+            'user_id' => $request->get('user_id'),
+            'portal' => $request->get('portal'),
+            'token_expiry' => $request->get('token_expiry'),
+        ]);
     }
 }

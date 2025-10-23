@@ -2,29 +2,10 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Defaults
-    |--------------------------------------------------------------------------
-    |
-    | Default guard and password reset settings for your application.
-    |
-    */
-
     'defaults' => [
         'guard' => 'web',
         'passwords' => 'users',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Guards
-    |--------------------------------------------------------------------------
-    |
-    | Guards define how users are authenticated for each request.
-    | 'session' driver works for browser-based login (like retailer portal).
-    |
-    */
 
     'guards' => [
         'web' => [
@@ -32,28 +13,18 @@ return [
             'provider' => 'users',
         ],
 
+        // Still here for legacy support (if ever needed)
         'api' => [
-            'driver' => 'session', //jwt before just removed for composer install to go
+            'driver' => 'session',
             'provider' => 'users',
-            'hash' => false,
         ],
 
+        // Admin portal
         'admin' => [
-            'driver' => 'session', //jwt before just removed for composer install to go
+            'driver' => 'session',
             'provider' => 'admin_users',
-            'hash' => false,
         ],
     ],
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | User Providers
-    |--------------------------------------------------------------------------
-    |
-    | Define where each guard fetches user data from.
-    |
-    */
 
     'providers' => [
         'users' => [
@@ -67,15 +38,6 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Resetting Passwords
-    |--------------------------------------------------------------------------
-    |
-    | Password reset settings.
-    |
-    */
-
     'passwords' => [
         'users' => [
             'provider' => 'users',
@@ -84,15 +46,6 @@ return [
             'throttle' => 60,
         ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Password Confirmation Timeout
-    |--------------------------------------------------------------------------
-    |
-    | Duration in seconds before password confirmation expires.
-    |
-    */
 
     'password_timeout' => 10800,
 

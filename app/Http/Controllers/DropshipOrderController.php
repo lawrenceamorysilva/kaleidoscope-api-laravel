@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Log;
 class DropshipOrderController extends Controller
 {
 
-    public function openSummary()
+    public function openSummary(Request $request)
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
 
         // Build the query
         $query = DropshipOrder::where('user_id', $userId)
@@ -33,7 +33,7 @@ class DropshipOrderController extends Controller
             ->orderBy('created_at', 'desc');
 
         // Log the SQL with bindings
-        \Log::info('KIWI openSummary query: ' . $query->toSql(), $query->getBindings());
+        /*\Log::info('KIWI openSummary query: ' . $query->toSql(), $query->getBindings());*/
 
         // Execute and transform
         $orders = $query->get()->map(function ($order) {
@@ -55,9 +55,9 @@ class DropshipOrderController extends Controller
 
 
 
-    public function show($id)
+    public function show(Request $request,$id)
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
 
         $order = DropshipOrder::with('items')
             ->where('id', $id)
@@ -80,6 +80,9 @@ class DropshipOrderController extends Controller
 
     public function store(Request $request)
     {
+
+        /*\Log::info('🔥 DropshipOrderController@store hit');*/
+
         $validated = $request->validate([
             'po_number' => 'nullable|string',
             'delivery_instructions' => 'nullable|string',
@@ -107,41 +110,60 @@ class DropshipOrderController extends Controller
             'items.*.name' => 'required|string',
         ]);
 
-        $userId = auth()->id();
+        $userId = $request->input('user_id');
 
-        // 🔍 Check for duplicate orders
-        $existing = \App\Models\DropshipOrder::with('items')
+        /*\Log::info('🔥 DropshipOrderController@store hit, user_id: ' . ($userId ?? 'null'));*/
+
+
+        // 🔍 Check for duplicate orders start
+        $validatedItems = collect($validated['items'])->map(fn($i) => [
+            'sku' => strtolower($i['sku']),
+            'qty' => (int)$i['qty'],
+        ])->sortBy('sku')->values()->all();
+
+        $candidateOrders = \App\Models\DropshipOrder::with('items')
             ->where('user_id', $userId)
-            ->where('status', 'open')
-            ->where('grand_total', $validated['grand_total'])
-            ->get()
-            ->filter(function ($order) use ($validated) {
-                $currentItems = collect($validated['items'])->map(fn($i) => [
-                    'sku' => strtolower($i['sku']),
-                    'qty' => (int) $i['qty'],
-                ])->sortBy('sku')->values()->all();
+            ->whereIn('status', ['open', 'for_shipping'])
+            ->where('first_name', $validated['first_name'])
+            ->where('last_name', $validated['last_name'])
+            ->where('shipping_address_line1', $validated['shipping_address_line1'])
+            ->where('shipping_address_line2', $validated['shipping_address_line2'] ?? null)
+            ->get();
 
-                $orderItems = $order->items->map(fn($i) => [
-                    'sku' => strtolower($i->sku),
-                    'qty' => (int) $i->qty,
-                ])->sortBy('sku')->values()->all();
+        // 2️⃣ Compare items
+        $existing = null;
 
-                return $currentItems === $orderItems;
-            })
-            ->first();
+        foreach ($candidateOrders as $order) {
+            $orderItems = $order->items->map(fn($i) => [
+                'sku' => strtolower($i->sku),
+                'qty' => (int)$i->qty,
+            ])->sortBy('sku')->values()->all();
+
+            if ($orderItems === $validatedItems) {
+                $existing = $order;
+                break;
+            }
+        }
 
         if ($existing) {
+            Log::info('🔥 Duplicate dropship order detected', [
+                'user_id' => $userId,
+                'order_id' => $existing->id,
+                'items' => $validatedItems,
+            ]);
+
             return response()->json([
                 'code' => 'DUPLICATE_ORDER',
                 'message' => 'You’ve already placed this same order before.',
                 'order_id' => $existing->id,
                 'status' => $existing->status,
-            ], 409); // HTTP 409 Conflict
+            ], 409);
         }
+        // 🔍 Check for duplicate orders end
 
-        // --- Continue with your existing logic ---
+
+
         DB::beginTransaction();
-
         try {
             $order = DropshipOrder::create([
                 'user_id' => $userId,
@@ -179,7 +201,8 @@ class DropshipOrderController extends Controller
 
             return response()->json([
                 'message' => 'Dropship order saved successfully',
-                'order_id' => $order->id,
+                'order' => $order,
+                //'order_id' => $order->id,
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -192,17 +215,19 @@ class DropshipOrderController extends Controller
 
 
 
+
     /* used to simply update status OR to literally update every part of the dropship order*/
     public function update(Request $request, $id)
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
+        \Log::info('🔥 DropshipOrderController@update hit, user_id: ' . ($userId ?? 'null'));
 
         $order = DropshipOrder::where('id', $id)
             ->where('user_id', $userId)
             ->firstOrFail();
 
-        // ✅ Case 1: Status-only update
-        if ($request->has('status') && count($request->all()) === 1) {
+        // ✅ Status-only update (soft delete, etc.)
+        if ($request->has('status') && count($request->all()) === 1 || $request->has('status') && ! $request->has('items')) {
             $validated = $request->validate([
                 'status' => 'required|string|in:open,for_shipping,fulfilled,canceled,removed',
             ]);
@@ -215,7 +240,7 @@ class DropshipOrderController extends Controller
             ]);
         }
 
-        // ✅ Case 2: Full update
+        // ✅ Full update validation
         $validated = $request->validate([
             'po_number' => 'nullable|string',
             'delivery_instructions' => 'nullable|string',
@@ -296,9 +321,10 @@ class DropshipOrderController extends Controller
 
 
 
+
     public function bulkUpdateStatus(Request $request)
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
 
         $validated = $request->validate([
             'order_ids'   => 'required|array|min:1',
@@ -338,7 +364,7 @@ class DropshipOrderController extends Controller
 
     public function history(Request $request): JsonResponse
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
         $status = $request->query('status'); // optional filter
 
         $query = DropshipOrder::where('user_id', $userId)
