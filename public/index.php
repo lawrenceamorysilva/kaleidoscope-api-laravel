@@ -3,8 +3,17 @@
 // -----------------------------
 // Fix for FastCGI / cgi-fcgi Authorization header
 // -----------------------------
-if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && empty($_SERVER['HTTP_AUTHORIZATION'])) {
-    $_SERVER['HTTP_AUTHORIZATION'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $_SERVER['HTTP_AUTHORIZATION'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    } elseif (function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        if (!empty($headers['Authorization'])) {
+            $_SERVER['HTTP_AUTHORIZATION'] = $headers['Authorization'];
+        } elseif (!empty($headers['authorization'])) { // lowercase fallback
+            $_SERVER['HTTP_AUTHORIZATION'] = $headers['authorization'];
+        }
+    }
 }
 
 use Illuminate\Contracts\Http\Kernel;
