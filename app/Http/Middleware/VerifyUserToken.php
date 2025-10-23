@@ -16,11 +16,19 @@ class VerifyUserToken
     {
         $authHeader = $request->header('Authorization');
 
-        // ✅ Quick fallback: check query param if header missing (staging/live)
+        // 🔹 Fallback: query param if header missing (staging/live)
         if (!$authHeader) {
             $tokenFromQuery = $request->query('api_token');
             if ($tokenFromQuery) {
                 $authHeader = 'Bearer ' . $tokenFromQuery;
+            }
+        }
+
+        // 🔹 Fallback: body param for POST/PUT/PATCH/DELETE
+        if (!$authHeader && in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
+            $tokenFromBody = $request->input('api_token');
+            if ($tokenFromBody) {
+                $authHeader = 'Bearer ' . $tokenFromBody;
             }
         }
 
@@ -41,9 +49,9 @@ class VerifyUserToken
 
         // ✅ Merge token context (user_id + portal + expiry)
         $request->merge([
-            'user_id'     => $result['data']['user_id'],
-            'portal'      => $result['data']['portal'],
-            'token_expiry'=> $result['data']['expires_at'],
+            'user_id'      => $result['data']['user_id'],
+            'portal'       => $result['data']['portal'],
+            'token_expiry' => $result['data']['expires_at'],
         ]);
 
         // ✅ Continue request
