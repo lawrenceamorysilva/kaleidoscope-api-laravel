@@ -15,12 +15,14 @@ class VerifyUserToken
     public function handle(Request $request, Closure $next): Response
     {
         $authHeader = $request->header('Authorization');
+        $source = 'none';
 
         // 🔹 Fallback: query param if header missing (staging/live)
         if (!$authHeader) {
             $tokenFromQuery = $request->query('api_token');
             if ($tokenFromQuery) {
                 $authHeader = 'Bearer ' . $tokenFromQuery;
+                $source = 'query';
             }
         }
 
@@ -29,11 +31,18 @@ class VerifyUserToken
             $tokenFromBody = $request->input('api_token');
             if ($tokenFromBody) {
                 $authHeader = 'Bearer ' . $tokenFromBody;
+                $source = 'body';
             }
+        }
+
+        // 🔹 Header source
+        if ($authHeader && $source === 'none') {
+            $source = 'header';
         }
 
         // ✅ Must start with Bearer
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            logger()->warning("Unauthorized request — missing bearer token. Source: {$source}");
             return response()->json(['message' => 'Unauthorized: missing bearer token'], 401);
         }
 
@@ -42,6 +51,7 @@ class VerifyUserToken
         // ✅ Validate token
         $result = TokenHelper::validate($token);
         if (!$result['valid']) {
+            logger()->warning("Unauthorized request — invalid token. Source: {$source}, Reason: {$result['reason']}");
             return response()->json([
                 'message' => 'Unauthorized: ' . $result['reason']
             ], 401);
@@ -53,6 +63,8 @@ class VerifyUserToken
             'portal'       => $result['data']['portal'],
             'token_expiry' => $result['data']['expires_at'],
         ]);
+
+        logger()->info("Token validated successfully. Source: {$source}, User ID: {$result['data']['user_id']}");
 
         // ✅ Continue request
         return $next($request);
