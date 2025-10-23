@@ -50,6 +50,22 @@ Route::middleware(['verify.user.token'])->prefix('retailer')->group(function () 
     Route::get('/dropship-orders/history', [DropshipOrderController::class, 'history']);
     Route::get('/dropship-orders/{id}', [DropshipOrderController::class, 'show']);
     Route::post('/dropship-orders/bulkUpdate', [DropshipOrderController::class, 'bulkUpdateStatus']);
+
+
+    Route::get('/debug-token', function (\Illuminate\Http\Request $request) {
+        \Log::info('🕵️‍♂️ Debug token route hit', [
+            'Authorization_header' => $request->header('Authorization'),
+            'bearer_token' => $request->bearerToken(),
+            'all_headers' => $request->headers->all(),
+            'user_id_input' => $request->input('user_id'),
+        ]);
+
+        return response()->json([
+            'message' => 'Debug token route hit successfully',
+            'bearer_token' => $request->bearerToken()
+        ]);
+    });
+
 });
 
 // ----------------------
