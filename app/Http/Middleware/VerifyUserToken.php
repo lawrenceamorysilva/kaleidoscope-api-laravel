@@ -17,7 +17,16 @@ class VerifyUserToken
         $authHeader = $request->header('Authorization');
         $source = 'none';
 
-        // 🔹 Fallback: query param if header missing (staging/live)
+        // 🪵 Debug log for staging token issues
+        logger()->debug('🔍 VerifyUserToken Entry', [
+            'method' => $request->method(),
+            'full_url' => $request->fullUrl(),
+            'headers' => $request->headers->all(),
+            'has_body' => !empty($request->all()),
+            'body' => $request->all(),
+        ]);
+
+        // 🔹 Fallback: query param (GET)
         if (!$authHeader) {
             $tokenFromQuery = $request->query('api_token');
             if ($tokenFromQuery) {
@@ -29,6 +38,18 @@ class VerifyUserToken
         // 🔹 Fallback: body param for POST/PUT/PATCH/DELETE
         if (!$authHeader && in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
             $tokenFromBody = $request->input('api_token');
+
+            // If still missing, try to parse raw JSON body
+            if (!$tokenFromBody) {
+                $rawContent = $request->getContent();
+                if ($rawContent) {
+                    $decoded = json_decode($rawContent, true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['api_token'])) {
+                        $tokenFromBody = $decoded['api_token'];
+                    }
+                }
+            }
+
             if ($tokenFromBody) {
                 $authHeader = 'Bearer ' . $tokenFromBody;
                 $source = 'body';
@@ -42,7 +63,10 @@ class VerifyUserToken
 
         // ✅ Must start with Bearer
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            logger()->warning("Unauthorized request — missing bearer token. Source: {$source}");
+            logger()->warning("🚫 Unauthorized request — missing bearer token. Source: {$source}", [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+            ]);
             return response()->json(['message' => 'Unauthorized: missing bearer token'], 401);
         }
 
@@ -51,7 +75,10 @@ class VerifyUserToken
         // ✅ Validate token
         $result = TokenHelper::validate($token);
         if (!$result['valid']) {
-            logger()->warning("Unauthorized request — invalid token. Source: {$source}, Reason: {$result['reason']}");
+            logger()->warning("🚫 Unauthorized request — invalid token. Source: {$source}, Reason: {$result['reason']}", [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+            ]);
             return response()->json([
                 'message' => 'Unauthorized: ' . $result['reason']
             ], 401);
@@ -69,7 +96,7 @@ class VerifyUserToken
         ]);
 
         // 🧩 Enhanced portal-aware log
-        logger()->info("[{$portal}] Token validated successfully. Source: {$source}, User ID: {$userId}");
+        logger()->info("[{$portal}] ✅ Token validated successfully. Source: {$source}, User ID: {$userId}");
 
         // ✅ Continue request
         return $next($request);
