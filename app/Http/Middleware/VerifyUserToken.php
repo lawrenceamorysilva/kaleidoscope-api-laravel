@@ -16,6 +16,14 @@ class VerifyUserToken
     {
         $authHeader = $request->header('Authorization');
 
+        // ✅ Quick staging fallback: check query param if header missing
+        if (!$authHeader) {
+            $tokenFromQuery = $request->query('api_token');
+            if ($tokenFromQuery) {
+                $authHeader = 'Bearer ' . $tokenFromQuery;
+            }
+        }
+
         // ✅ Must start with Bearer
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
             return response()->json(['message' => 'Unauthorized: missing bearer token'], 401);
