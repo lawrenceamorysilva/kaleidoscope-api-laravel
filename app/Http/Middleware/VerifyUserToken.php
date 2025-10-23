@@ -9,24 +9,20 @@ use App\Helpers\TokenHelper;
 
 class VerifyUserToken
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $authHeader = $request->header('Authorization');
         $source = 'none';
 
-        // 🪵 Debug log for staging token issues
-        logger()->debug('🔍 VerifyUserToken Entry', [
-            'method' => $request->method(),
-            'full_url' => $request->fullUrl(),
-            'headers' => $request->headers->all(),
-            'has_body' => !empty($request->all()),
-            'body' => $request->all(),
-        ]);
+        // 🪵 Log entry (staging only)
+        if (app()->environment('staging')) {
+            logger()->debug('[VerifyUserToken] Entry', [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+            ]);
+        }
 
-        // 🔹 Fallback: query param (GET)
+        // 1️⃣ Check query param
         if (!$authHeader) {
             $tokenFromQuery = $request->query('api_token');
             if ($tokenFromQuery) {
@@ -35,18 +31,14 @@ class VerifyUserToken
             }
         }
 
-        // 🔹 Fallback: body param for POST/PUT/PATCH/DELETE
+        // 2️⃣ Check body param (JSON or FormData)
         if (!$authHeader && in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
             $tokenFromBody = $request->input('api_token');
 
-            // If still missing, try to parse raw JSON body
             if (!$tokenFromBody) {
-                $rawContent = $request->getContent();
-                if ($rawContent) {
-                    $decoded = json_decode($rawContent, true);
-                    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['api_token'])) {
-                        $tokenFromBody = $decoded['api_token'];
-                    }
+                $decoded = json_decode($request->getContent(), true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($decoded['api_token'])) {
+                    $tokenFromBody = $decoded['api_token'];
                 }
             }
 
@@ -56,15 +48,15 @@ class VerifyUserToken
             }
         }
 
-        // 🔹 Header source
+        // 3️⃣ Default to header
         if ($authHeader && $source === 'none') {
             $source = 'header';
         }
 
-        // ✅ Must start with Bearer
+        // 4️⃣ Validate presence
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            logger()->warning("🚫 Unauthorized request — missing bearer token. Source: {$source}", [
-                'method' => $request->method(),
+            logger()->warning("🚫 Unauthorized — missing bearer token", [
+                'source' => $source,
                 'url' => $request->fullUrl(),
             ]);
             return response()->json(['message' => 'Unauthorized: missing bearer token'], 401);
@@ -72,33 +64,33 @@ class VerifyUserToken
 
         $token = trim($matches[1]);
 
-        // ✅ Validate token
+        // 5️⃣ Validate token
         $result = TokenHelper::validate($token);
         if (!$result['valid']) {
-            logger()->warning("🚫 Unauthorized request — invalid token. Source: {$source}, Reason: {$result['reason']}", [
-                'method' => $request->method(),
+            logger()->warning("🚫 Unauthorized — invalid token", [
+                'source' => $source,
+                'reason' => $result['reason'],
                 'url' => $request->fullUrl(),
             ]);
-            return response()->json([
-                'message' => 'Unauthorized: ' . $result['reason']
-            ], 401);
+            return response()->json(['message' => 'Unauthorized: ' . $result['reason']], 401);
         }
 
-        // ✅ Extract portal type (admin or retailer)
+        // 6️⃣ Merge token context
         $portal = $result['data']['portal'] ?? 'unknown';
-        $userId = $result['data']['user_id'] ?? 'N/A';
+        $userId = $result['data']['user_id'] ?? null;
 
-        // ✅ Merge token context (user_id + portal + expiry)
         $request->merge([
-            'user_id'      => $userId,
-            'portal'       => $portal,
-            'token_expiry' => $result['data']['expires_at'],
+            'user_id' => $userId,
+            'portal' => $portal,
+            'token_expiry' => $result['data']['expires_at'] ?? null,
         ]);
 
-        // 🧩 Enhanced portal-aware log
-        logger()->info("[{$portal}] ✅ Token validated successfully. Source: {$source}, User ID: {$userId}");
+        // ✅ Success log (info-level)
+        logger()->info("[{$portal}] ✅ Token validated", [
+            'user_id' => $userId,
+            'source' => $source,
+        ]);
 
-        // ✅ Continue request
         return $next($request);
     }
 }
