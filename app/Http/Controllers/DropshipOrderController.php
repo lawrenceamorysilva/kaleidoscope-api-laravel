@@ -638,7 +638,7 @@ class DropshipOrderController extends Controller
             'filename' => $filename,
             'created_at' => $now,
             'dl_counter' => 1,
-            'admin_users_id' => \Auth::id(),
+            'admin_users_id' => $request->input('user_id'),
             'dl_date' => $now
         ]);
 

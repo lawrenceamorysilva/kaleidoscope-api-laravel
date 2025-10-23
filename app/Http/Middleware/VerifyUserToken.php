@@ -57,14 +57,19 @@ class VerifyUserToken
             ], 401);
         }
 
+        // ✅ Extract portal type (admin or retailer)
+        $portal = $result['data']['portal'] ?? 'unknown';
+        $userId = $result['data']['user_id'] ?? 'N/A';
+
         // ✅ Merge token context (user_id + portal + expiry)
         $request->merge([
-            'user_id'      => $result['data']['user_id'],
-            'portal'       => $result['data']['portal'],
+            'user_id'      => $userId,
+            'portal'       => $portal,
             'token_expiry' => $result['data']['expires_at'],
         ]);
 
-        logger()->info("Token validated successfully. Source: {$source}, User ID: {$result['data']['user_id']}");
+        // 🧩 Enhanced portal-aware log
+        logger()->info("[{$portal}] Token validated successfully. Source: {$source}, User ID: {$userId}");
 
         // ✅ Continue request
         return $next($request);
