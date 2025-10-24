@@ -17,7 +17,7 @@ class NetoService
         $this->username = config('services.neto.username');
     }
 
-    public function getCustomerByEmail(string $email): ?array
+    public function getCustomerByEmail(string $email)
     {
         $response = Http::withHeaders([
             'NETOAPI_ACTION'   => 'GetCustomer',
@@ -40,21 +40,23 @@ class NetoService
 
         // Debug logging
         logger()->info('Neto Customer API response', [
-            'request_email' => $email,
-            'response_body' => $response->body(),
+            'kiwi' => $response->json()['Customer'][0]
         ]);
 
         if ($response->successful()) {
-            return $response->json()['Customer'][0] ?? null;
+            return $response->json()['Customer'][0];
+        }
+        else{
+            return false;
         }
 
-        logger()->error('Failed to fetch customer from Neto', [
+        /*logger()->error('Failed to fetch customer from Neto', [
             'email' => $email,
             'status' => $response->status(),
             'body' => $response->body(),
-        ]);
+        ]);*/
 
-        return null;
+        /*return null;*/
     }
 
 

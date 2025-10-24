@@ -98,7 +98,7 @@ class SyncNetoProducts extends Command
             $isDropship = strtolower($item['Misc24'] ?? '') === 'yes';
             $sku = $item['SKU'] ?? 'UNKNOWN SKU';
 
-            if (!$approved) { //allow dropship = No
+            if (!$approved) {
                 $totalSkipped++;
                 if (!$reducedLog) {
                     $this->line("⏭️ Skipped (Not approved or not dropship): $sku");
@@ -208,10 +208,9 @@ class SyncNetoProducts extends Command
             \Log::channel('neto')->info($line);
         }
 
-        // Refresh cache
+        // 🧹 Refresh cache
         \Log::channel('neto')->info("Rebuilding neto_products_cache...");
-
-        Cache::forget('neto_products_cache'); // 🧹 Clean up old cache first
+        Cache::forget('neto_products_cache');
 
         $allProducts = \App\Models\NetoProduct::all()->mapWithKeys(function ($product) {
             $sku = strtoupper($product->sku);
@@ -223,20 +222,30 @@ class SyncNetoProducts extends Command
                     'shipping_weight' => $product->shipping_weight,
                     'qty_available' => ($product->qty ?? 0) - ($product->qty_buffer ?? 0),
                     'qty_buffer' => $product->qty_buffer,
-                    'updated_at' => $product->updated_at ? $product->updated_at->toDateTimeString(): null,
+                    'updated_at' => $product->updated_at ? $product->updated_at->toDateTimeString() : null,
                 ],
             ];
         })->toArray();
 
-        Cache::put('neto_products_cache', $allProducts, now()->addHours(6));
+        // ✅ Store with timestamp
+        $payload = [
+            'last_refreshed_at' => now()->toDateTimeString(),
+            'products' => $allProducts,
+        ];
+
+        Cache::put('neto_products_cache', $payload, now()->addHours(6));
+        Cache::put('neto_products_last_refreshed_at', now(), now()->addHours(6));
+
 
         \Log::channel('neto')->info("✅ neto_products_cache refreshed. Total SKUs: " . count($allProducts));
+        \Log::channel('neto')->info("🕒 Last refreshed at: " . $payload['last_refreshed_at']);
         \Log::channel('neto')->info('Sample SKUs in cache: ' . implode(', ', array_slice(array_keys($allProducts), 0, 3)));
 
         Cache::forget('neto_products_all');
 
         return Command::SUCCESS;
     }
+
 
 
 
