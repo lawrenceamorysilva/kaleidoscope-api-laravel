@@ -330,14 +330,21 @@ class DropshipOrderController extends Controller
             'order_ids'   => 'required|array|min:1',
             'order_ids.*' => 'integer|exists:dropship_orders,id',
             'status'      => 'required|string|in:open,for_shipping,fulfilled,canceled',
+            'payment_reference'   => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
         try {
-            // Only update the orders belonging to this user
-            $updatedCount = DropshipOrder::whereIn('id', $validated['order_ids'])
-                ->where('user_id', $userId)
-                ->update(['status' => $validated['status']]);
+            $query = DropshipOrder::whereIn('id', $validated['order_ids']);
+
+            if ($userId) {
+                $query->where('user_id', $userId);
+            }
+
+            $updatedCount = $query->update([
+                'status' => $validated['status'],
+                'payment_reference' => $validated['payment_reference'] ?? null,
+            ]);
 
             DB::commit();
 
@@ -348,9 +355,10 @@ class DropshipOrderController extends Controller
             }
 
             return response()->json([
-                'message' => 'Orders updated successfully',
-                'updated' => $updatedCount,
-                'status'  => $validated['status'],
+                'message'   => 'Orders updated successfully',
+                'updated'   => $updatedCount,
+                'status'    => $validated['status'],
+                'payment_reference' => $validated['payment_reference'],
             ]);
 
         } catch (\Throwable $e) {
@@ -379,6 +387,7 @@ class DropshipOrderController extends Controller
                 'min_order_fee',
                 'shipping_total',
                 'grand_total',
+                'payment_reference',
                 'updated_at',
                 'created_at',
             )
@@ -398,6 +407,7 @@ class DropshipOrderController extends Controller
                 'min_order_fee' => $order->min_order_fee,
                 'shipping_total'=> $order->shipping_total,
                 'grand_total'   => $order->grand_total,
+                'payment_reference'   => $order->payment_reference,
                 'updated_at'    => $order->updated_at->toDateTimeString(),
                 'created_at'    => $order->created_at->toDateTimeString(),
             ];

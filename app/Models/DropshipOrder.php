@@ -28,6 +28,7 @@ class DropshipOrder extends Model
         'dropship_fee',
         'min_order_fee',
         'grand_total',
+        'payment_reference',
         'selected_courier',
         'available_shipping_options',
         'status',
