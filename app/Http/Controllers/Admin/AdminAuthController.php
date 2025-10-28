@@ -30,11 +30,12 @@ class AdminAuthController extends Controller
             return response()->json(['message' => 'Invalid admin credentials'], 401);
         }
 
-        // 🧩 Generate token for Admin Portal
-        $token = TokenHelper::generate($admin->id, 'admin');
+        // ✅ Use the same TokenHelper that already provides token + expires_at
+        $tokenData = TokenHelper::generate($admin->id, 'admin');
 
         return response()->json([
-            'token' => $token,
+            'token' => $tokenData['token'],
+            'expires_at' => $tokenData['expires_at'], // ← already handled inside helper
             'user' => [
                 'id' => $admin->id,
                 'email' => $admin->email,

@@ -89,7 +89,7 @@ class RetailerAuthController extends Controller
         );
 
         // --- Generate API token ---
-        $token = TokenHelper::generate($user->id, 'retailer');
+        $tokenData = TokenHelper::generate($user->id, 'retailer');
 
         Log::info('Retailer SSO login success', [
             'user_id' => $user->id,
@@ -98,7 +98,8 @@ class RetailerAuthController extends Controller
 
         // --- Return token + user info ---
         return response()->json([
-            'token' => $token,
+            'token' => $tokenData['token'],
+            'expires_at' => $tokenData['expires_at'],
             'user'  => $user,
         ]);
     }

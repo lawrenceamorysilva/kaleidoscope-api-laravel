@@ -13,7 +13,7 @@ class TokenHelper
      *
      * @param  int    $userId
      * @param  string $portal  'retailer' | 'admin'
-     * @return string          The full baked token
+     * @return array[]
      */
     public static function generate($userId, $portal)
     {
@@ -42,7 +42,10 @@ class TokenHelper
             'created_at' => Carbon::now('UTC')->toDateTimeString(),
         ]);
 
-        return $finalToken;
+        return [
+            'token' => $finalToken,
+            'expires_at' => $expiry->toIso8601String()
+        ];
     }
 
     /**
