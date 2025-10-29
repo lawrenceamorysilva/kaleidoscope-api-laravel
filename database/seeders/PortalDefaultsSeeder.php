@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
+//php artisan db:seed --class=PortalDefaultsSeeder
 class PortalDefaultsSeeder extends Seeder
 {
     public function run(): void
@@ -29,7 +30,7 @@ class PortalDefaultsSeeder extends Seeder
             ]
         );
 
-        DB::table('portal_settings')->updateOrInsert(
+        /*DB::table('portal_settings')->updateOrInsert(
             ['key' => 'minimum_freight_charge'],
             [
                 'value' => '15.00',
@@ -37,10 +38,10 @@ class PortalDefaultsSeeder extends Seeder
                 'updated_at' => now(),
                 'created_at' => now(),
             ]
-        );
+        );*/
 
         // Example of a string-based setting (future proof)
-        DB::table('portal_settings')->updateOrInsert(
+        /*DB::table('portal_settings')->updateOrInsert(
             ['key' => 'support_email'],
             [
                 'value' => 'support@kaleidoscope.com.au',
@@ -48,7 +49,7 @@ class PortalDefaultsSeeder extends Seeder
                 'updated_at' => now(),
                 'created_at' => now(),
             ]
-        );
+        );*/
 
         /*// Example of a boolean-based setting (future proof)
         DB::table('portal_settings')->updateOrInsert(

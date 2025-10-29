@@ -26,48 +26,34 @@ class RetailerAuthController extends Controller
      */
     public function ssoLogin(Request $request)
     {
-
-
-
         $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
         ]);
 
+        $email     = strtolower(trim($request->input('email')));
+        $username  = $request->input('username') ?? null;
+        $signature = $request->input('signature') ?? null;
 
-
-        $email    = strtolower(trim($request->input('email')));
-        $username = $request->input('username') ?? null;
-        $signature= $request->input('signature') ?? null;
-
-        // --- Verify SSO signature if provided ---
-        /*if ($signature && $username) {
+        // --- Optional SSO signature verification ---
+        /*
+        if ($signature && $username) {
             $expectedSignature = hash_hmac('sha256', "{$username}|{$email}", env('SSO_SECRET_KEY'));
             if (!hash_equals($signature, $expectedSignature)) {
                 return response()->json(['message' => 'Invalid SSO signature'], 401);
             }
-        }*/
-
-        Log::info('TAE before', [
-            'user_id' => $email
-        ]);
+        }
+        */
 
         // --- Check Neto for user ---
         $customerResponse = $this->neto->getCustomerByEmail($email);
 
-
-        Log::info('TAE after', [
-            'user_id' => $customerResponse
-        ]);
+        Log::info('TAE after', ['user_id' => $customerResponse]);
 
         if (!$customerResponse) {
             return response()->json([
                 'message' => 'Customer not found in Neto. Please contact support.'
             ], 401);
         }
-
-        Log::info('LETS GO TYJHS!', [
-            'user_id' => $customerResponse
-        ]);
 
         $customer = $customerResponse;
 
@@ -91,18 +77,29 @@ class RetailerAuthController extends Controller
         // --- Generate API token ---
         $tokenData = TokenHelper::generate($user->id, 'retailer');
 
-        Log::info('Retailer SSO login success', [
-            'user_id' => $user->id,
-            'email'   => $user->email,
-        ]);
+        // --- Load Portal Settings + Contents ---
+        $settings = \App\Models\PortalSetting::select('key', 'value', 'type')
+            ->get()
+            ->pluck('value', 'key');
 
-        // --- Return token + user info ---
+        $contents = \App\Models\PortalContent::select('key', 'title', 'content')
+            ->get()
+            ->keyBy('key');
+
+
+
+        Log::info('CONTENTS & SETTINGS after', ['contents' => $contents, 'settings',$settings]);
+
+        // --- Return token + user + config ---
         return response()->json([
-            'token' => $tokenData['token'],
+            'token'      => $tokenData['token'],
             'expires_at' => $tokenData['expires_at'],
-            'user'  => $user,
+            'user'       => $user,
+            'settings'   => $settings,
+            'contents'   => $contents,
         ]);
     }
+
 
     /**
      * Verify token (for “/auth/me”-like checks)
