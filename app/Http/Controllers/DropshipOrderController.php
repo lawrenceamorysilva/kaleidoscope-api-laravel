@@ -114,6 +114,7 @@ class DropshipOrderController extends Controller
 
         /*\Log::info('🔥 DropshipOrderController@store hit, user_id: ' . ($userId ?? 'null'));*/
 
+        $duplicateOverride = $request->boolean('duplicate_override', false);
 
         // 🔍 Check for duplicate orders start
         $validatedItems = collect($validated['items'])->map(fn($i) => [
@@ -123,7 +124,8 @@ class DropshipOrderController extends Controller
 
         $candidateOrders = \App\Models\DropshipOrder::with('items')
             ->where('user_id', $userId)
-            ->whereIn('status', ['open', 'for_shipping'])
+            ->whereIn('status', ['open'])
+            //->whereIn('status', ['open', 'for_shipping'])
             ->where('first_name', $validated['first_name'])
             ->where('last_name', $validated['last_name'])
             ->where('shipping_address_line1', $validated['shipping_address_line1'])
@@ -145,7 +147,7 @@ class DropshipOrderController extends Controller
             }
         }
 
-        if ($existing) {
+        if ($existing && !$duplicateOverride) {
             Log::info('🔥 Duplicate dropship order detected', [
                 'user_id' => $userId,
                 'order_id' => $existing->id,
