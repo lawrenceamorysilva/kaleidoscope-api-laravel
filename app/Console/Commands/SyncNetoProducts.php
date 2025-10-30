@@ -131,7 +131,9 @@ class SyncNetoProducts extends Command
                 'qty' => $item['AvailableSellQuantity'] ?? null,
                 'qty_buffer' => (int)($item['Misc31'] ?? 0),
                 //'shipping_weight' => $item['ShippingWeight'] ?? null,
-                'shipping_weight' => ($item['ShippingWeight'] === '' || $item['ShippingWeight'] === null ? 5 : (int)$item['ShippingWeight']),
+                //'shipping_weight' => ($item['Misc25'] === '' || $item['Misc25'] === null ? 5 : (int)$item['Misc25']),
+                'shipping_weight' => (empty($item['Misc25']) || (int)$item['Misc25'] === 0 ? 5 : (int)$item['Misc25']),
+
                 'shipping_length' => $item['ShippingLength'] ?? null,
                 'shipping_width' => $item['ShippingWidth'] ?? null,
                 'shipping_height' => $item['ShippingHeight'] ?? null,
