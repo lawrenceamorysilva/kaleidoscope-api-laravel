@@ -76,6 +76,7 @@ Route::middleware(['verify.user.token'])->prefix('admin')->group(function () {
     Route::post('/logout', [AdminAuthController::class, 'logout']);
 
     // Dropship Management
+    Route::get('/dropship-orders/pending-count', [DropshipOrderController::class, 'pendingCount']);
     Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
     Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
     Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);

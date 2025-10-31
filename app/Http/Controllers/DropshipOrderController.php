@@ -511,6 +511,16 @@ class DropshipOrderController extends Controller
         return response()->json(['orders' => $orders]);
     }
 
+    public function pendingCount(): JsonResponse
+    {
+        $count = DropshipOrder::where('status', 'for_shipping')
+            ->whereNull('dropship_order_filename_id')
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
+
 
 
     public function exportCsv(Request $request)
