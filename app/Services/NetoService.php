@@ -39,9 +39,9 @@ class NetoService
         ]);
 
         // Debug logging
-        logger()->info('Neto Customer API response', [
+        /*logger()->info('Neto Customer API response', [
             'kiwi' => $response->json()['Customer'][0]
-        ]);
+        ]);*/
 
         if ($response->successful()) {
             return $response->json()['Customer'][0];

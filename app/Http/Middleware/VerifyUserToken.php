@@ -86,10 +86,10 @@ class VerifyUserToken
         ]);
 
         // ✅ Success log (info-level)
-        logger()->info("[{$portal}] ✅ Token validated", [
+        /*logger()->info("[{$portal}] ✅ Token validated", [
             'user_id' => $userId,
             'source' => $source,
-        ]);
+        ]);*/
 
         return $next($request);
     }

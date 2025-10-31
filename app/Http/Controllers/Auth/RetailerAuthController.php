@@ -47,7 +47,7 @@ class RetailerAuthController extends Controller
         // --- Check Neto for user ---
         $customerResponse = $this->neto->getCustomerByEmail($email);
 
-        Log::info('TAE after', ['user_id' => $customerResponse]);
+        /*Log::info('TAE after', ['user_id' => $customerResponse]);*/
 
         if (!$customerResponse) {
             return response()->json([
