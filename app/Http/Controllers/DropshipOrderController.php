@@ -124,8 +124,8 @@ class DropshipOrderController extends Controller
 
         $candidateOrders = \App\Models\DropshipOrder::with('items')
             ->where('user_id', $userId)
-            ->whereIn('status', ['open'])
-            //->whereIn('status', ['open', 'for_shipping'])
+            //->whereIn('status', ['open'])
+            ->whereIn('status', ['open', 'for_shipping']) //as per discussion with james 31-oct-2025, scope would be open and for_shipping statuses
             ->where('first_name', $validated['first_name'])
             ->where('last_name', $validated['last_name'])
             ->where('shipping_address_line1', $validated['shipping_address_line1'])

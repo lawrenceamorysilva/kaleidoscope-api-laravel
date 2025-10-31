@@ -87,8 +87,8 @@ class RetailerAuthController extends Controller
             ->keyBy('key');
 
 
-
-        Log::info('CONTENTS & SETTINGS after', ['contents' => $contents, 'settings',$settings]);
+        /*Log::info('user info:', ['user' => $user]);*/
+        //Log::info('CONTENTS & SETTINGS after', ['contents' => $contents, 'settings',$settings]);
 
         // --- Return token + user + config ---
         return response()->json([
