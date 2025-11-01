@@ -11,6 +11,7 @@ class DropshipOrder extends Model
 
     protected $fillable = [
         'user_id',
+        'modified_by_admin_user_id',
         'po_number',
         'delivery_instructions',
         'first_name',

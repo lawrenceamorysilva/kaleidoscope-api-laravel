@@ -80,6 +80,8 @@ Route::middleware(['verify.user.token'])->prefix('admin')->group(function () {
     Route::get('/dropship-orders', [DropshipOrderController::class, 'adminIndex']);
     Route::get('/dropship-export-history', [DropshipOrderController::class, 'adminExportHistory']);
     Route::post('/export-dropship-orders', [DropshipOrderController::class, 'exportCsv']);
+    Route::put('/dropship-orders-admin/{id}', [DropshipOrderController::class, 'adminCancel']);
+
 
     // General Settings
     Route::get('/general-settings', [GeneralSettingsController::class, 'index']);

@@ -424,6 +424,27 @@ class DropshipOrderController extends Controller
 
 
     //ADMIN PORTAL STUFF BELOW:::
+
+    public function adminCancel($id, Request $request)
+    {
+        $adminUserId = $request->input('admin_user_id');
+
+        \Log::info('Dropship order canceled, by user_id: ' . ($adminUserId ?? 'null'));
+
+        $order = DropshipOrder::findOrFail($id);
+
+        $order->update([
+            'status' => 'canceled',
+            'modified_by_admin_user_id' => $adminUserId,
+        ]);
+
+        return response()->json([
+            'message' => "Order #{$order->id} has been canceled by admin",
+            'order_id' => $order->id,
+        ]);
+    }
+
+
     public function adminExportHistory(Request $request): JsonResponse
     {
         $orders = \App\Models\DropshipOrderFilename::with([
