@@ -489,19 +489,6 @@ class DropshipOrderController extends Controller
 
     public function adminIndex(Request $request): JsonResponse
     {
-
-        // Log the Authorization header
-        /*\Log::info('KIWI AdminIndex called', [
-            'authorization' => $request->header('Authorization'),
-            'token' => $request->bearerToken(),
-            'guard_user' => auth('admin')->user(),
-        ]);
-
-        if (!auth('admin')->check()) {
-            return response()->json(['error' => 'Unauthenticated admin!'], 401);
-        }*/
-
-
         $cacheKey = 'admin_export_orders';
 
         $orders = cache()->remember($cacheKey, now()->addSeconds(20), function () {
@@ -514,10 +501,13 @@ class DropshipOrderController extends Controller
             ])
                 ->with([
                     'items:id,dropship_order_id,sku,name,qty,price',
-                    'user:id,username'
+                    'user:id,username,active'
                 ])
                 ->where('status', 'for_shipping')
                 ->whereNull('dropship_order_filename_id')
+                ->whereHas('user', function ($query) {
+                    $query->where('active', true);
+                })
                 ->orderByDesc('created_at')
                 ->get()
                 ->map(function ($order) {
@@ -532,14 +522,19 @@ class DropshipOrderController extends Controller
         return response()->json(['orders' => $orders]);
     }
 
+
     public function pendingCount(): JsonResponse
     {
-        $count = DropshipOrder::where('status', 'for_shipping')
-            ->whereNull('dropship_order_filename_id')
+        $count = DropshipOrder::query()
+            ->join('users', 'users.id', '=', 'dropship_orders.user_id')
+            ->where('dropship_orders.status', 'for_shipping')
+            ->whereNull('dropship_orders.dropship_order_filename_id')
+            ->where('users.active', 1)
             ->count();
 
         return response()->json(['count' => $count]);
     }
+
 
 
 

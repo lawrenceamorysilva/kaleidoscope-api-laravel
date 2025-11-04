@@ -34,21 +34,60 @@ class NetoService
                     'OnCreditHold',
                     'DefaultInvoiceTerms',
                     'BillingAddress',
+                    'Active',
+                ],
+            ],
+        ]);
+
+        // Decode once for easier inspection
+        $data = $response->json();
+
+        // ✅ Debug log safely
+        logger()->info('Neto Customer API response', [
+            'raw' => $data,
+        ]);
+
+        // ✅ Check success and ensure structure
+        if ($response->successful() && isset($data['Customer']) && is_array($data['Customer']) && count($data['Customer']) > 0) {
+            return $data['Customer'][0];
+        }
+
+        // 🚨 Fallback: return false if not found or invalid
+        return false;
+
+
+
+        /*$response = Http::withHeaders([
+            'NETOAPI_ACTION'   => 'GetCustomer',
+            'NETOAPI_KEY'      => config('services.neto.key'),
+            'NETOAPI_USERNAME' => config('services.neto.username'),
+            'Accept'           => 'application/json',
+            'Content-Type'     => 'application/json',
+        ])->post(config('services.neto.url'), [
+            'Filter' => [
+                'Email' => $email,
+                'OutputSelector' => [
+                    'ID',
+                    'Username',
+                    'OnCreditHold',
+                    'DefaultInvoiceTerms',
+                    'BillingAddress',
+                    'Active',
                 ],
             ],
         ]);
 
         // Debug logging
-        /*logger()->info('Neto Customer API response', [
+        logger()->info('Neto Customer API response', [
             'kiwi' => $response->json()['Customer'][0]
-        ]);*/
+        ]);
 
         if ($response->successful()) {
             return $response->json()['Customer'][0];
         }
         else{
             return false;
-        }
+        }*/
 
         /*logger()->error('Failed to fetch customer from Neto', [
             'email' => $email,

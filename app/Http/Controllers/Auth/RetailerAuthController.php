@@ -51,8 +51,8 @@ class RetailerAuthController extends Controller
 
         if (!$customerResponse) {
             return response()->json([
-                'message' => 'Customer not found in Neto. Please contact support.'
-            ], 401);
+                'message' => 'Login Error: Retailer Credentials Invalid'
+            ], 403);
         }
 
         $customer = $customerResponse;
@@ -64,6 +64,7 @@ class RetailerAuthController extends Controller
             'on_credit_hold'        => ($customer['OnCreditHold'] ?? 'False') === 'True',
             'default_invoice_terms' => $customer['DefaultInvoiceTerms'],
             'bill_company'          => $customer['BillingAddress']['BillCompany'],
+            'active'                => ($customer['Active'] ?? 'True') === 'True',
         ];
 
         // --- Create or update user locally ---
@@ -73,6 +74,13 @@ class RetailerAuthController extends Controller
                 'password' => Hash::make(Str::random(16)), // Only for new users
             ])
         );
+
+        // --- Block inactive users before proceeding ---
+        if (!$data['active']) {
+            return response()->json([
+                'message' => 'Login Error. Retailer Account Inactive.'
+            ], 403);
+        }
 
         // --- Generate API token ---
         $tokenData = TokenHelper::generate($user->id, 'retailer');

@@ -13,6 +13,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'customer_id', 'username',
         'on_credit_hold', 'default_invoice_terms', 'bill_company',
+        'active'
     ];
 
     protected $hidden = ['password', 'remember_token'];
