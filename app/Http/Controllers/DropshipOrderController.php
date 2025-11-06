@@ -612,7 +612,7 @@ class DropshipOrderController extends Controller
                     $do['shipping_total'] ?? 0,
                     $doi['sku'] ?? '',
                     $doi['qty'] ?? 1,
-                    $do['selected_courier'] ?? '',
+                    $do['selected_courier'] === 'DirectFreight' ? 'Direct Freight' : ($do['selected_courier'] === 'AusPost' ? 'Australia Post' : ($do['selected_courier'] ?? '')),
                     $doi['price'] ?? 0,
                     'No',
                     'Dropshipping'
@@ -637,7 +637,7 @@ class DropshipOrderController extends Controller
                     $do['shipping_total'] ?? 0,
                     'MIN-ORDER',
                     1,
-                    $do['selected_courier'] ?? '',
+                    $do['selected_courier'] === 'DirectFreight' ? 'Direct Freight' : ($do['selected_courier'] === 'AusPost' ? 'Australia Post' : ($do['selected_courier'] ?? '')),
                     $do['min_order_fee'],
                     'No',
                     'Dropshipping'
@@ -661,7 +661,7 @@ class DropshipOrderController extends Controller
                 $do['shipping_total'] ?? 0,
                 'ADROP',
                 1,
-                $do['selected_courier'] ?? '',
+                $do['selected_courier'] === 'DirectFreight' ? 'Direct Freight' : ($do['selected_courier'] === 'AusPost' ? 'Australia Post' : ($do['selected_courier'] ?? '')),
                 11,
                 'No',
                 'Dropshipping'
