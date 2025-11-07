@@ -66,6 +66,10 @@
                  $suburb   = trim($row[1]);
                  $state    = trim($row[2]);
 
+                 if (ctype_digit($postcode) && strlen($postcode) < 4) {
+                     $postcode = str_pad($postcode, 4, '0', STR_PAD_LEFT);
+                 }
+
                  $this->info("Processing row {$rowCount}: Postcode {$postcode}, Suburb {$suburb}, State {$state}");
 
                  // Weights now start at column index 3 (shifted by +1 due to new 'state' column)
