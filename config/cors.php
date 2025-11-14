@@ -24,6 +24,7 @@ return [
         'https://staging-retailer.kaleidoscope.com.au',
         'https://admin.kaleidoscope.com.au',
         'https://retailer.kaleidoscope.com.au',
+        'https://dropshipping.kaleidoscope.com.au',
     ],
 
     /*'allowed_origins' => ['*'],*/

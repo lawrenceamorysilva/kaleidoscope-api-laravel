@@ -37,7 +37,8 @@ class SSOLoginController extends Controller
                 $baseUrl = 'https://staging-retailer.kaleidoscope.com.au';
                 break;
             default:
-                $baseUrl = 'https://retailer.kaleidoscope.com.au';
+                //$baseUrl = 'https://retailer.kaleidoscope.com.au';
+                $baseUrl = 'https://dropshipping.kaleidoscope.com.au';
                 break;
         }
 
