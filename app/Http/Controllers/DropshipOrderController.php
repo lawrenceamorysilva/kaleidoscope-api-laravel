@@ -471,6 +471,7 @@ class DropshipOrderController extends Controller
                             'grand_total'   => $order->grand_total,
                             'shipping_total'=> $order->shipping_total,
                             'created_at'    => $order->created_at,
+                            'updated_at'    => $order->updated_at,
                             'items'         => $order->items->map(fn ($item) => [
                                 'sku'   => $item->sku,
                                 'name'  => $item->name,
@@ -497,7 +498,7 @@ class DropshipOrderController extends Controller
                 'first_name', 'last_name', 'business_name', 'shipping_address_line1',
                 'shipping_address_line2', 'suburb', 'state', 'postcode', 'phone',
                 'product_total', 'dropship_fee', 'min_order_fee', 'shipping_total',
-                'grand_total', 'selected_courier', 'created_at'
+                'grand_total', 'selected_courier', 'created_at', 'updated_at'
             ])
                 ->with([
                     'items:id,dropship_order_id,sku,name,qty,price',

@@ -25,6 +25,7 @@ return [
         'https://admin.kaleidoscope.com.au',
         'https://retailer.kaleidoscope.com.au',
         'https://dropshipping.kaleidoscope.com.au',
+        'https://toydrop.com.au',
     ],
 
     /*'allowed_origins' => ['*'],*/
