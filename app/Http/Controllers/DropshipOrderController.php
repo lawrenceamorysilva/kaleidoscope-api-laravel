@@ -502,7 +502,7 @@ class DropshipOrderController extends Controller
             ])
                 ->with([
                     'items:id,dropship_order_id,sku,name,qty,price',
-                    'user:id,username,active'
+                    'user:id,username,active,bill_company'
                 ])
                 ->where('status', 'for_shipping')
                 ->whereNull('dropship_order_filename_id')
@@ -514,6 +514,7 @@ class DropshipOrderController extends Controller
                 ->map(function ($order) {
                     $data = $order->toArray();
                     $data['username'] = optional($order->user)->username;
+                    $data['bill_company'] = optional($order->user)->bill_company;
                     unset($data['user']);
                     return $data;
                 })
